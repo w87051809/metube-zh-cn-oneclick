@@ -1,0 +1,552 @@
+(function () {
+  const translations = new Map([
+    ["MeTube", "MeTube"],
+    ["MeTube Logo", "MeTube 标志"],
+    ["GitHub", "GitHub"],
+    ["yt-dlp", "下载内核 yt-dlp"],
+    ["yt-dlp-options", "yt-dlp 参数"],
+
+    ["Enter video, channel, or playlist URL", "输入视频、频道或播放列表链接"],
+    ["Download", "下载"],
+    ["Subscribe", "订阅"],
+    ["Download or subscribe", "下载或订阅"],
+    ["Adding...", "正在添加..."],
+    ["Subscribing...", "正在订阅..."],
+    ["Canceling...", "正在取消..."],
+    ["Cancel adding URL", "取消添加链接"],
+    ["Connecting to server...", "正在连接服务器..."],
+    ["Waiting for stream", "等待下载流"],
+    ["Please enter a URL", "请输入一个链接"],
+    ["No valid URLs found.", "没有找到有效链接。"],
+    ["No URLs found for the selected filter.", "当前筛选条件下没有找到链接。"],
+    ["No items found", "没有找到项目"],
+    ["No results available", "没有可用结果"],
+
+    ["Advanced Options", "高级选项"],
+    ["Output", "输出"],
+    ["Download Folder", "下载文件夹"],
+    ["Custom Name Prefix", "自定义文件名前缀"],
+    ["Add a prefix to downloaded filenames.", "给下载文件名前面加一段自定义文字。"],
+    ["Split by chapters", "按章节拆分"],
+    ["Clip start", "剪辑开始"],
+    ["Clip end", "剪辑结束"],
+    ["Optional start time (seconds, M:SS, or H:MM:SS). Blank = from start or YouTube &t= in URL.", "可选：开始时间，支持秒数、M:SS 或 H:MM:SS。留空就是从开头开始，或使用 YouTube 链接里的 &t= 时间。"],
+    ["Optional end time. Blank = until end of media.", "可选：结束时间。留空就是一直到视频结束。"],
+    ["Behavior", "行为"],
+    ["Auto Start", "自动开始"],
+    ["Items Limit", "条数限制"],
+    ["Subscription Check (min)", "订阅检查间隔（分钟）"],
+    ["Subscription Title Filter", "订阅标题过滤"],
+    ["Skip members-only subscription videos", "跳过会员专属视频"],
+    ["Option Presets", "参数预设"],
+    ["Custom yt-dlp Options", "自定义 yt-dlp 参数"],
+    ["Optional per-download yt-dlp overrides as a JSON object.", "可选：给这一次下载单独填写 yt-dlp JSON 参数，不影响其他下载。"],
+
+    ["Tools", "工具"],
+    ["Cookies", "登录凭据"],
+    ["Upload Cookies", "上传登录凭据"],
+    ["Replace Cookies", "替换登录凭据"],
+    ["Remove uploaded cookies", "删除已上传登录凭据"],
+    ["No cookies configured", "未配置登录凭据"],
+    ["Cookies active", "登录凭据已启用"],
+    ["Upload a cookies.txt file from your browser to authenticate restricted or private downloads.", "上传浏览器导出的 cookies.txt，用来下载需要登录、受限或私有的视频。"],
+    ["Error uploading cookies.", "上传登录凭据失败。"],
+    ["Error deleting cookies.", "删除登录凭据失败。"],
+    ["Error reloading yt-dlp options:", "重新加载 yt-dlp 参数失败："],
+
+    ["Bulk Actions", "批量操作"],
+    ["Import URLs", "导入链接"],
+    ["Export URLs", "导出链接"],
+    ["Copy URLs", "复制链接"],
+    ["Batch Import URLs", "批量导入链接"],
+    ["Paste one video URL per line", "每行粘贴一个视频链接"],
+    ["Cancel Import", "取消导入"],
+    ["No URLs found for the selected filter.", "当前筛选条件下没有可导出的链接。"],
+    ["Failed to copy URLs.", "复制链接失败。"],
+    ["Failed to copy to clipboard. Your browser may require HTTPS for clipboard access.", "复制到剪贴板失败。浏览器可能要求 HTTPS 才允许访问剪贴板。"],
+    ["Copied!", "已复制！"],
+
+    ["Downloading", "下载中"],
+    ["Completed", "已完成"],
+    ["Cancel selected", "取消选中"],
+    ["Download selected", "下载选中"],
+    ["Download Selected", "下载选中"],
+    ["Clear selected", "删除选中和文件"],
+    ["Clear completed", "删除已完成和文件"],
+    ["Clear completed failed", "清除已完成项目失败"],
+    ["Clear failed", "删除失败记录"],
+    ["Clear failed downloads failed", "清除失败下载记录失败"],
+    ["Retry failed", "重试失败"],
+    ["Delete failed", "删除失败"],
+    ["Delete completed item", "删除记录和硬盘文件"],
+    ["Delete", "删除"],
+    ["Remove", "移除"],
+    ["Clear all", "清空全部"],
+    ["completed", "已完成"],
+    ["failed", "失败"],
+
+    ["Video", "视频"],
+    ["Audio", "音频"],
+    ["Captions", "字幕"],
+    ["Thumbnail", "封面图"],
+    ["Speed", "速度"],
+    ["ETA", "剩余时间"],
+    ["Type", "类型"],
+    ["Quality", "画质"],
+    ["Codec", "编码"],
+    ["Codec / Format", "编码 / 格式"],
+    ["Format", "格式"],
+    ["File Size", "文件大小"],
+    ["Downloaded", "已下载"],
+    ["Language", "语言"],
+    ["Subtitle Source", "字幕来源"],
+    ["Template", "模板"],
+
+    ["Subscriptions", "订阅"],
+    ["Check all now", "立即检查全部"],
+    ["Check selected", "立即检查选中"],
+    ["Check now", "立即检查"],
+    ["Checking", "正在检查"],
+    ["Checking now", "正在检查"],
+    ["Delete selected", "删除选中"],
+    ["Delete subscription", "删除订阅"],
+    ["Delete subscription failed", "删除订阅失败"],
+    ["Delete subscriptions failed", "删除订阅失败"],
+    ["Subscribe failed", "订阅失败"],
+    ["Invalid subscription title filter (regex)", "订阅标题过滤写错了：正则表达式无效"],
+    ["Edit subscription title filter (subscriptions only; not for one-off downloads)", "编辑订阅标题过滤（只影响订阅，不影响单次下载）"],
+    ["Name", "名称"],
+    ["URL", "链接"],
+    ["URL:", "链接:"],
+    ["Filter", "过滤"],
+    ["Interval (min)", "间隔（分钟）"],
+    ["Last checked", "上次检查"],
+    ["Status", "状态"],
+
+    ["Select all", "全选"],
+    ["Select all queue items", "全选下载队列"],
+    ["Select all done items", "全选已完成"],
+    ["Select all subscriptions", "全选订阅"],
+    ["Select item", "选择项目"],
+    ["Select subscription", "选择订阅"],
+    ["Pause", "暂停"],
+    ["Resume", "恢复"],
+    ["Edit", "编辑"],
+    ["Save", "保存"],
+    ["Cancel", "取消"],
+    ["Close", "关闭"],
+    ["Paused", "已暂停"],
+    ["Active", "已启用"],
+
+    ["Default", "默认"],
+    ["Auto", "自动"],
+    ["Dark", "深色"],
+    ["Light", "浅色"],
+    ["Best", "最佳"],
+    ["Worst", "最低"],
+    ["Yes", "是"],
+    ["No", "否"],
+    ["Oldest first", "最早优先"],
+    ["Newest first", "最新优先"],
+    ["Add item", "添加项目"],
+    ["Optional regex", "可选正则"],
+    ["e.g. 2:26", "例如 2:26"],
+    ["e.g. 3:24", "例如 3:24"],
+    ["e.g. en, es, zh-Hans", "例如 zh-Hans, en, es"],
+    ["LIVE", "直播"],
+    ["- starts in", "- 开始于"],
+    [" - starts in", " - 开始于"],
+    ["iOS Compatible", "iOS 兼容"],
+
+    ["Error:", "错误:"],
+    ["Message:", "消息:"],
+    ["Important", "重要"],
+    ["Click for details", "点击查看详情"],
+    ["Copy error details to clipboard", "复制错误详情到剪贴板"],
+    ["Failed to cancel adding:", "取消添加失败："],
+    ["Invalid event target", "事件目标无效"],
+    ["No transports available", "没有可用的连接通道"],
+    ["Failed to sanitize html because the input is unstable", "清理 HTML 失败：输入内容不稳定"],
+    ["DownloadProgress", "下载进度"],
+    ["UploadProgress", "上传进度"],
+    ["MissingIcon", "缺少图标"],
+    ["aria-labelledby", "由标签说明"],
+    ["control", "控件"],
+    ["role", "角色"],
+
+    ["Error adding URL: 400: missing 'url', 'download_type', or 'quality'", "添加链接失败：请输入一个链接"],
+    ["Error subscribing URL: 400: missing 'url', 'download_type', or 'quality'", "订阅失败：请输入一个链接"],
+    ["Error adding subscription: 400: missing 'url', 'download_type', or 'quality'", "订阅失败：请输入一个链接"],
+  ]);
+
+  const dynamicRules = [
+    [/^Error adding URL:\s*(.*)$/i, "添加链接失败："],
+    [/^Error subscribing URL:\s*(.*)$/i, "订阅失败："],
+    [/^Error adding subscription:\s*(.*)$/i, "订阅失败："],
+    [/^Subscribe failed:\s*(.*)$/i, "订阅失败："],
+    [/^Delete failed:\s*(.*)$/i, "删除失败："],
+    [/^Delete completed item:\s*(.*)$/i, "删除已完成项目失败："],
+    [/^Delete subscription failed:\s*(.*)$/i, "删除订阅失败："],
+    [/^Delete subscriptions failed:\s*(.*)$/i, "删除订阅失败："],
+    [/^Clear completed failed:\s*(.*)$/i, "清除已完成项目失败："],
+    [/^Clear failed downloads failed:\s*(.*)$/i, "清除失败下载记录失败："],
+    [/^Failed to cancel adding:\s*(.*)$/i, "取消添加失败："],
+    [/^Error uploading cookies\.\s*(.*)$/i, "上传登录凭据失败："],
+    [/^Error deleting cookies\.\s*(.*)$/i, "删除登录凭据失败："],
+    [/^Error reloading yt-dlp options:\s*(.*)$/i, "重新加载 yt-dlp 参数失败："],
+    [/^Download result file for\s+(.+)$/i, "下载文件："],
+    [/^Share result file for\s+(.+)$/i, "分享文件："],
+    [/^Open source URL for\s+(.+)$/i, "打开原始链接："],
+    [/^Start download for\s+(.+)$/i, "开始下载："],
+    [/^Retry download for\s+(.+)$/i, "重试下载："],
+    [/^Toggle error details for\s+(.+)$/i, "展开或收起错误详情："],
+    [/^Download chapter file\s+(.+)$/i, "下载章节文件："],
+    [/^Open chapter file\s+(.+)$/i, "打开章节文件："],
+    [/^Delete completed item\s+(.+)$/i, "删除记录和硬盘文件："],
+    [/^Select item\s+(.+)$/i, "选择项目："],
+    [/^Select subscription\s+(.+)$/i, "选择订阅："],
+    [/^Check now\s+(.+)$/i, "立即检查："],
+    [/^Pause\s+(.+)$/i, "暂停订阅："],
+    [/^Resume\s+(.+)$/i, "恢复订阅："],
+    [/^Delete subscription\s+(.+)$/i, "删除订阅："],
+    [/^(\d+)\s+completed$/i, "$1 个已完成"],
+    [/^(\d+)\s+failed$/i, "$1 个失败"],
+  ];
+
+  const detailTranslations = [
+    [/^400:\s*missing 'url', 'download_type', or 'quality'$/i, "请输入链接，并确认下载类型和画质已选择"],
+    [/missing 'url'/i, "缺少链接"],
+    [/missing 'download_type'/i, "缺少下载类型"],
+    [/missing 'quality'/i, "缺少画质"],
+    [/network/i, "网络连接异常"],
+    [/timeout/i, "连接超时"],
+    [/forbidden|403/i, "没有权限访问，可能需要 Cookie"],
+    [/unauthorized|401/i, "未登录或登录已失效，可能需要重新上传 Cookie"],
+    [/not found|404/i, "没有找到内容，链接可能失效"],
+    [/No video formats found/i, "没有找到可下载的视频格式，可能需要 Cookie 或更新 yt-dlp"],
+    [/Private video/i, "这是私有视频，需要有权限的 Cookie"],
+    [/Sign in to confirm/i, "需要登录确认，请上传有效 Cookie"],
+    [/This video is unavailable/i, "这个视频不可用"],
+  ];
+
+  const attributeNames = [
+    "aria-label",
+    "aria-description",
+    "alt",
+    "title",
+    "placeholder",
+    "ngbtooltip",
+    "ng-reflect-ngb-tooltip",
+    "data-bs-original-title",
+    "data-original-title",
+  ];
+
+  const thumbnailState = {
+    byUrl: new Map(),
+    byTitle: new Map(),
+    byId: new Map(),
+    loading: false,
+  };
+
+  function installThumbnailStyles() {
+    if (document.getElementById("metube-thumb-style")) return;
+    const style = document.createElement("style");
+    style.id = "metube-thumb-style";
+    style.textContent = `
+      .metube-row-thumb {
+        width: 38px;
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        margin: 0 8px 0 2px;
+        border-radius: 3px;
+        background: rgba(108, 117, 125, .28);
+        border: 1px solid rgba(173, 181, 189, .32);
+        vertical-align: middle;
+        line-height: 0;
+      }
+      .metube-row-thumb img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+      }
+      td.metube-video-thumb-cell {
+        white-space: nowrap;
+      }
+      td.metube-video-thumb-cell > a,
+      td.metube-video-thumb-cell > button {
+        max-width: calc(100% - 56px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+      }
+      td.metube-video-thumb-cell > button {
+        display: inline-flex;
+        align-items: center;
+      }
+      .metube-row-thumb.is-empty::before {
+        content: "";
+        width: 0;
+        height: 0;
+        border-top: 5px solid transparent;
+        border-bottom: 5px solid transparent;
+        border-left: 8px solid currentColor;
+        color: rgba(255, 255, 255, .72);
+      }
+      @media (max-width: 700px) {
+        .metube-row-thumb {
+          width: 34px;
+          height: 20px;
+          margin-right: 6px;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function normalizeKey(value) {
+    return cleanText(String(value || "")).toLowerCase();
+  }
+
+  function getYoutubeIdFromUrl(value) {
+    if (!value) return "";
+    try {
+      const url = new URL(value, window.location.href);
+      const host = url.hostname.replace(/^www\./, "");
+      if (host === "youtu.be") {
+        const id = url.pathname.split("/").filter(Boolean)[0] || "";
+        if (/^[A-Za-z0-9_-]{11}$/.test(id)) return id;
+      }
+      if (host.endsWith("youtube.com")) {
+        const watchId = url.searchParams.get("v");
+        if (/^[A-Za-z0-9_-]{11}$/.test(watchId || "")) return watchId || "";
+        const parts = url.pathname.split("/").filter(Boolean);
+        const markerIndex = parts.findIndex((part) => ["embed", "shorts", "live"].includes(part));
+        const id = markerIndex >= 0 ? parts[markerIndex + 1] : "";
+        if (/^[A-Za-z0-9_-]{11}$/.test(id || "")) return id || "";
+      }
+    } catch (_) {
+      const match = String(value).match(/(?:v=|youtu\.be\/|embed\/|shorts\/|live\/)([A-Za-z0-9_-]{11})/);
+      if (match) return match[1];
+    }
+    return "";
+  }
+
+  function getYoutubeId(item) {
+    if (!item) return "";
+    if (/^[A-Za-z0-9_-]{11}$/.test(item.id || "")) return item.id;
+    return getYoutubeIdFromUrl(item.url);
+  }
+
+  function indexDownloadItem(item) {
+    if (!item || typeof item !== "object") return;
+    const title = normalizeKey(item.title);
+    const url = normalizeKey(item.url);
+    const id = normalizeKey(item.id || getYoutubeId(item));
+    if (title) thumbnailState.byTitle.set(title, item);
+    if (url) thumbnailState.byUrl.set(url, item);
+    if (id) thumbnailState.byId.set(id, item);
+  }
+
+  async function refreshThumbnailIndex() {
+    if (thumbnailState.loading) return;
+    thumbnailState.loading = true;
+    try {
+      const response = await fetch("history", { cache: "no-store" });
+      if (!response.ok) return;
+      const data = await response.json();
+      const byUrl = new Map();
+      const byTitle = new Map();
+      const byId = new Map();
+      thumbnailState.byUrl = byUrl;
+      thumbnailState.byTitle = byTitle;
+      thumbnailState.byId = byId;
+      for (const listName of ["done", "queue", "pending"]) {
+        const list = Array.isArray(data[listName]) ? data[listName] : [];
+        for (const item of list) indexDownloadItem(item);
+      }
+      enhanceThumbnails();
+    } catch (_) {
+      // 网络临时失败时不打扰页面，下一轮轮询会继续补。
+    } finally {
+      thumbnailState.loading = false;
+    }
+  }
+
+  function findItemForCell(cell) {
+    const anchors = Array.from(cell.querySelectorAll("a[href]"));
+    for (const anchor of anchors) {
+      const href = normalizeKey(anchor.getAttribute("href"));
+      const absoluteHref = normalizeKey(anchor.href);
+      const id = getYoutubeIdFromUrl(anchor.href || anchor.getAttribute("href"));
+      if (thumbnailState.byUrl.has(href)) return thumbnailState.byUrl.get(href);
+      if (thumbnailState.byUrl.has(absoluteHref)) return thumbnailState.byUrl.get(absoluteHref);
+      if (id && thumbnailState.byId.has(normalizeKey(id))) return thumbnailState.byId.get(normalizeKey(id));
+    }
+
+    const titleSources = anchors.concat(Array.from(cell.querySelectorAll("button")));
+    const title = titleSources
+      .map((source) => cleanText(source.textContent || ""))
+      .filter(Boolean)
+      .sort((a, b) => b.length - a.length)[0];
+    const titleKey = normalizeKey(title);
+    if (titleKey && thumbnailState.byTitle.has(titleKey)) return thumbnailState.byTitle.get(titleKey);
+
+    const cellText = normalizeKey(cell.textContent || "");
+    if (cellText && thumbnailState.byTitle.has(cellText)) return thumbnailState.byTitle.get(cellText);
+    for (const [knownTitle, item] of thumbnailState.byTitle) {
+      if (knownTitle && cellText.includes(knownTitle)) return item;
+    }
+    return null;
+  }
+
+  function createThumbnail(item, fallbackUrl) {
+    const id = getYoutubeId(item) || getYoutubeIdFromUrl(fallbackUrl);
+    const holder = document.createElement("span");
+    holder.className = "metube-row-thumb";
+    holder.setAttribute("aria-hidden", "true");
+    holder.title = "视频封面";
+
+    if (!id) {
+      holder.classList.add("is-empty");
+      return holder;
+    }
+
+    const img = document.createElement("img");
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    img.alt = "";
+    img.src = `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;
+    img.onerror = () => {
+      img.remove();
+      holder.classList.add("is-empty");
+    };
+    holder.appendChild(img);
+    return holder;
+  }
+
+  function enhanceThumbnails() {
+    installThumbnailStyles();
+    for (const row of document.querySelectorAll("table tbody tr")) {
+      const cells = row.querySelectorAll("td");
+      if (cells.length < 2) continue;
+      const cell = cells[1];
+      if (cell.querySelector(".metube-row-thumb")) continue;
+      const item = findItemForCell(cell);
+      if (!item) continue;
+      const anchor = cell.querySelector("a[href]");
+      cell.classList.add("metube-video-thumb-cell");
+      cell.insertBefore(createThumbnail(item, anchor && anchor.href), cell.firstChild);
+    }
+  }
+
+  function cleanText(value) {
+    return value.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function translateDetail(value) {
+    const cleaned = cleanText(value);
+    const exact = translations.get(cleaned);
+    if (exact) return exact;
+    for (const [pattern, translated] of detailTranslations) {
+      if (pattern.test(cleaned)) return translated;
+    }
+    return cleaned;
+  }
+
+  function translateCleaned(cleaned) {
+    const exact = translations.get(cleaned);
+    if (exact) return exact;
+
+    for (const [pattern, prefix] of dynamicRules) {
+    const match = cleaned.match(pattern);
+      if (match) {
+        if (prefix.includes("$1")) return prefix.replace("$1", match[1] || "");
+        return `${prefix}${translateDetail(match[1] || "")}`;
+      }
+    }
+
+    return null;
+  }
+
+  function translateValue(value) {
+    if (!value) return value;
+    const cleaned = cleanText(value);
+    const translated = translateCleaned(cleaned);
+    if (!translated) return value;
+
+    const leading = value.match(/^\s*/)[0];
+    const trailing = value.match(/\s*$/)[0];
+    return `${leading}${translated}${trailing}`;
+  }
+
+  function translateTextNode(node) {
+    const next = translateValue(node.nodeValue);
+    if (next !== node.nodeValue) node.nodeValue = next;
+  }
+
+  function translateElement(element) {
+    if (!element.hasAttribute) return;
+    for (const name of attributeNames) {
+      if (!element.hasAttribute(name)) continue;
+      const current = element.getAttribute(name);
+      const next = translateValue(current);
+      if (next !== current) element.setAttribute(name, next);
+    }
+  }
+
+  function translateTree(root) {
+    if (!root) return;
+    if (root.nodeType === Node.ELEMENT_NODE) translateElement(root);
+    if (root.nodeType === Node.TEXT_NODE) translateTextNode(root);
+
+    const walker = document.createTreeWalker(
+      root,
+      NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+    );
+
+    let node = walker.currentNode;
+    while (node) {
+      if (node.nodeType === Node.TEXT_NODE) translateTextNode(node);
+      if (node.nodeType === Node.ELEMENT_NODE) translateElement(node);
+      node = walker.nextNode();
+    }
+  }
+
+  let scheduled = false;
+  function scheduleTranslate() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => {
+      scheduled = false;
+      document.documentElement.lang = "zh-CN";
+      translateTree(document.body);
+      enhanceThumbnails();
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", scheduleTranslate);
+  window.addEventListener("load", scheduleTranslate);
+
+  const observer = new MutationObserver(scheduleTranslate);
+  observer.observe(document.documentElement, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: attributeNames,
+  });
+
+  scheduleTranslate();
+  refreshThumbnailIndex();
+  setInterval(refreshThumbnailIndex, 10000);
+  setTimeout(scheduleTranslate, 300);
+  setTimeout(scheduleTranslate, 800);
+  setTimeout(scheduleTranslate, 1500);
+  setTimeout(scheduleTranslate, 3000);
+})();

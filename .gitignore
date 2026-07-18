@@ -1,0 +1,17 @@
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa*
+*安装日记*.md
+*日记*.md
+metube-index.html
+metube-main-*.js
+.playwright-cli/
+node_modules/
+dist/
+tmp/
+temp/
+
