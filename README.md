@@ -116,9 +116,15 @@ docker compose pull
 docker compose up -d
 ```
 
+## 原始作者
+
+- 原始项目：MeTube
+- 原始作者：[alexta69](https://github.com/alexta69)
+- 原始仓库：[alexta69/metube](https://github.com/alexta69/metube)
+
 ## 感谢
 
-感谢 [alexta69/metube](https://github.com/alexta69/metube) 的作者和贡献者。
+感谢 MeTube 原始作者 [alexta69](https://github.com/alexta69) 和 [alexta69/metube](https://github.com/alexta69/metube) 的所有贡献者。
 
 MeTube 是一个非常好用的自托管视频下载 Web UI，基于 `yt-dlp`，支持视频、音频、字幕、封面下载，也支持订阅频道和播放列表自动检查更新。
 

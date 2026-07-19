@@ -2,9 +2,15 @@
 
 本项目基于 MeTube 的官方 Docker 镜像做中文覆盖和安装体验整理。
 
-感谢：
+## 原始作者
 
-- MeTube 作者和贡献者：[alexta69/metube](https://github.com/alexta69/metube)
+- 原始项目：MeTube
+- 原始作者：[alexta69](https://github.com/alexta69)
+- 原始仓库：[alexta69/metube](https://github.com/alexta69/metube)
+
+## 感谢
+
+- MeTube 原始作者和贡献者：[alexta69/metube](https://github.com/alexta69/metube)
 - 下载内核：[yt-dlp](https://github.com/yt-dlp/yt-dlp)
 
 MeTube 是上游项目，本仓库不是官方项目。
@@ -14,4 +20,3 @@ MeTube 是上游项目，本仓库不是官方项目。
 ```text
 ghcr.io/alexta69/metube:latest
 ```
-
