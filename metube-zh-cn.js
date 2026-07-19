@@ -708,18 +708,39 @@
     status.textContent = text || (hasCookies ? "登录凭据已启用" : "未配置登录凭据");
   }
 
-  async function refreshYoutubeLoginStatus(force = false) {
+  async function refreshYoutubeLoginStatus(force = false, options = {}) {
+    const notify = !!options.notify;
     const now = Date.now();
-    if (youtubeLoginStatusLoading) return;
+    if (youtubeLoginStatusLoading) {
+      if (notify) showMaterialToast("正在检查登录状态，请稍等");
+      return null;
+    }
     if (!force && now - youtubeLoginLastStatusCheck < 15000) return;
     youtubeLoginStatusLoading = true;
     youtubeLoginLastStatusCheck = now;
+    if (force || notify) updateYoutubeLoginStatus(false, "正在检查...");
     try {
       const response = await fetch("cookie-status", { cache: "no-store" });
-      const data = response.ok ? await response.json() : {};
-      updateYoutubeLoginStatus(!!data.has_cookies);
-    } catch (_) {
+      const raw = await response.text();
+      let data = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch (_) {
+        data = { msg: raw };
+      }
+      if (!response.ok || data.status === "error") {
+        throw new Error(translateDetail(data.msg || response.statusText || "检查登录状态失败"));
+      }
+      const hasCookies = !!data.has_cookies;
+      updateYoutubeLoginStatus(hasCookies);
+      if (notify) {
+        showMaterialToast(hasCookies ? "登录凭据已启用" : "未配置登录凭据，请先上传 cookies.txt", hasCookies ? "success" : "error");
+      }
+      return hasCookies;
+    } catch (error) {
       updateYoutubeLoginStatus(false, "登录状态检查失败");
+      if (notify) showMaterialToast(`登录状态检查失败：${error.message || error}`, "error");
+      return false;
     } finally {
       youtubeLoginStatusLoading = false;
     }
@@ -778,7 +799,18 @@
 
     const input = entry.querySelector("input[type=file]");
     entry.querySelector("[data-youtube-cookie-upload]")?.addEventListener("click", () => input?.click());
-    entry.querySelector("[data-youtube-cookie-status]")?.addEventListener("click", () => refreshYoutubeLoginStatus(true));
+    const statusButton = entry.querySelector("[data-youtube-cookie-status]");
+    statusButton?.addEventListener("click", async () => {
+      const oldText = statusButton.textContent || "检查状态";
+      statusButton.disabled = true;
+      statusButton.textContent = "正在检查...";
+      try {
+        await refreshYoutubeLoginStatus(true, { notify: true });
+      } finally {
+        statusButton.disabled = false;
+        statusButton.textContent = oldText;
+      }
+    });
     input?.addEventListener("change", () => {
       const file = input.files && input.files[0];
       uploadYoutubeCookies(file).finally(() => {

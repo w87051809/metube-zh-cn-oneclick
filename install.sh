@@ -9,7 +9,7 @@ DOWNLOAD_TEMP_DIR="${DOWNLOAD_TEMP_DIR:-$DOWNLOAD_DIR/.下载临时文件}"
 PORT="${PORT:-8081}"
 IMAGE="${IMAGE:-ghcr.io/alexta69/metube:latest}"
 RAW_BASE="${RAW_BASE:-https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/main}"
-SCRIPT_VERSION="${SCRIPT_VERSION:-20260720-2}"
+SCRIPT_VERSION="${SCRIPT_VERSION:-20260720-3}"
 DEFAULT_YTDL_OPTIONS='{"remote_components":["ejs:github"]}'
 YTDL_OPTIONS_VALUE="${YTDL_OPTIONS:-$DEFAULT_YTDL_OPTIONS}"
 
