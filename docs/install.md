@@ -28,6 +28,8 @@ curl -fsSL https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/mai
 
 英文标题会尽量翻译成中文后保存到网页记录和硬盘文件名；翻译失败时保留原标题继续下载。
 
+遇到 YouTube 提示需要登录确认时，用页面上的 `YouTube 登录入口` 上传 `cookies.txt`。
+
 音频不会单独下载。
 
 ## 改完配置后重启

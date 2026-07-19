@@ -225,9 +225,10 @@
     [/forbidden|403/i, "没有权限访问，可能需要 Cookie"],
     [/unauthorized|401/i, "未登录或登录已失效，可能需要重新上传 Cookie"],
     [/not found|404/i, "没有找到内容，链接可能失效"],
-    [/No video formats found/i, "没有找到可下载的视频格式，可能需要 Cookie 或更新 yt-dlp"],
+    [/No video formats found/i, "没有找到视频格式，通常是 YouTube 要登录确认，请点 YouTube 登录入口上传 cookies.txt"],
+    [/Only images are available/i, "只拿到封面，视频需要 YouTube 登录凭据"],
     [/Private video/i, "这是私有视频，需要有权限的 Cookie"],
-    [/Sign in to confirm/i, "需要登录确认，请上传有效 Cookie"],
+    [/Sign in to confirm/i, "需要登录确认，请点 YouTube 登录入口上传 cookies.txt"],
     [/This video is unavailable/i, "这个视频不可用"],
   ];
 
@@ -333,6 +334,50 @@
       .metube-material-hint {
         color: var(--bs-secondary-color);
         font-size: .85rem;
+      }
+      .metube-youtube-login-entry {
+        max-width: 960px;
+        margin: .75rem auto 0;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px 12px;
+        padding: 10px 12px;
+        border: 1px solid rgba(108, 117, 125, .38);
+        border-radius: 6px;
+        background: rgba(33, 37, 41, .24);
+        color: var(--bs-body-color);
+        font-size: .9rem;
+      }
+      .metube-youtube-login-entry strong {
+        font-weight: 600;
+      }
+      .metube-youtube-login-entry button,
+      .metube-youtube-login-entry a {
+        border: 1px solid rgba(13, 110, 253, .72);
+        border-radius: 5px;
+        padding: 4px 9px;
+        background: rgba(13, 110, 253, .14);
+        color: #6ea8fe;
+        text-decoration: none;
+        line-height: 1.35;
+        cursor: pointer;
+      }
+      .metube-youtube-login-entry button:hover,
+      .metube-youtube-login-entry a:hover {
+        background: rgba(13, 110, 253, .24);
+        color: #9ec5fe;
+        text-decoration: none;
+      }
+      .metube-youtube-login-entry .metube-youtube-login-note {
+        color: var(--bs-secondary-color);
+      }
+      .metube-youtube-login-entry .metube-youtube-login-status {
+        margin-left: auto;
+        color: #ffc107;
+      }
+      .metube-youtube-login-entry .metube-youtube-login-status.is-active {
+        color: #20c997;
       }
       .metube-material-toast {
         position: fixed;
@@ -635,6 +680,96 @@
     }
   }
 
+  let youtubeLoginStatusLoading = false;
+  let youtubeLoginLastStatusCheck = 0;
+
+  function updateYoutubeLoginStatus(hasCookies, text) {
+    const status = document.querySelector("#metube-youtube-login-entry .metube-youtube-login-status");
+    if (!status) return;
+    status.classList.toggle("is-active", !!hasCookies);
+    status.textContent = text || (hasCookies ? "登录凭据已启用" : "未配置登录凭据");
+  }
+
+  async function refreshYoutubeLoginStatus(force = false) {
+    const now = Date.now();
+    if (youtubeLoginStatusLoading) return;
+    if (!force && now - youtubeLoginLastStatusCheck < 15000) return;
+    youtubeLoginStatusLoading = true;
+    youtubeLoginLastStatusCheck = now;
+    try {
+      const response = await fetch("cookie-status", { cache: "no-store" });
+      const data = response.ok ? await response.json() : {};
+      updateYoutubeLoginStatus(!!data.has_cookies);
+    } catch (_) {
+      updateYoutubeLoginStatus(false, "登录状态检查失败");
+    } finally {
+      youtubeLoginStatusLoading = false;
+    }
+  }
+
+  async function uploadYoutubeCookies(file) {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("cookies", file, file.name || "cookies.txt");
+    updateYoutubeLoginStatus(false, "正在上传...");
+    try {
+      const response = await fetch("upload-cookies", { method: "POST", body: formData });
+      const raw = await response.text();
+      let data = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch (_) {
+        data = { msg: raw };
+      }
+      if (!response.ok || data.status === "error") {
+        throw new Error(translateDetail(data.msg || response.statusText || "上传登录凭据失败"));
+      }
+      updateYoutubeLoginStatus(true);
+      showMaterialToast("YouTube 登录凭据已上传");
+      refreshYoutubeLoginStatus(true);
+    } catch (error) {
+      updateYoutubeLoginStatus(false, "上传失败");
+      showMaterialToast(`上传登录凭据失败：${error.message || error}`, "error");
+    }
+  }
+
+  function installYoutubeLoginEntry() {
+    installThumbnailStyles();
+    if (document.getElementById("metube-youtube-login-entry")) return;
+    const typeSelect = findTypeSelect();
+    if (!typeSelect) return;
+
+    const entry = document.createElement("div");
+    entry.id = "metube-youtube-login-entry";
+    entry.className = "metube-youtube-login-entry";
+    entry.innerHTML = `
+      <strong>YouTube 登录入口</strong>
+      <a href="https://www.youtube.com/" target="_blank" rel="noopener">打开 YouTube 登录</a>
+      <button type="button" data-youtube-cookie-upload>上传 cookies.txt</button>
+      <button type="button" data-youtube-cookie-status>检查状态</button>
+      <span class="metube-youtube-login-note">视频提示需要登录时，用这里上传登录凭据。</span>
+      <span class="metube-youtube-login-status">正在检查...</span>
+      <input type="file" accept=".txt,text/plain" hidden>
+    `;
+
+    const bundle = document.getElementById("metube-material-bundle");
+    const row = bundle || typeSelect.closest(".row") || typeSelect.parentElement?.parentElement || typeSelect.parentElement;
+    if (row && row.parentElement) {
+      row.insertAdjacentElement("afterend", entry);
+    }
+
+    const input = entry.querySelector("input[type=file]");
+    entry.querySelector("[data-youtube-cookie-upload]")?.addEventListener("click", () => input?.click());
+    entry.querySelector("[data-youtube-cookie-status]")?.addEventListener("click", () => refreshYoutubeLoginStatus(true));
+    input?.addEventListener("change", () => {
+      const file = input.files && input.files[0];
+      uploadYoutubeCookies(file).finally(() => {
+        input.value = "";
+      });
+    });
+    refreshYoutubeLoginStatus(true);
+  }
+
   function selectedMaterialAssets() {
     const checked = Array.from(document.querySelectorAll("#metube-material-bundle input[data-material-asset]:checked"))
       .map((input) => input.getAttribute("data-material-asset"));
@@ -784,6 +919,8 @@
       enhanceThumbnails();
       applyDefaultAutoFormat();
       installMaterialBundleControls();
+      installYoutubeLoginEntry();
+      refreshYoutubeLoginStatus();
     });
   }
 

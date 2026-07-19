@@ -9,7 +9,9 @@ DOWNLOAD_DIR="${DOWNLOAD_DIR:-/mnt/2TB/优兔视频}"
 PORT="${PORT:-8081}"
 IMAGE="${IMAGE:-ghcr.io/alexta69/metube:latest}"
 RAW_BASE="${RAW_BASE:-https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/main}"
-SCRIPT_VERSION="${SCRIPT_VERSION:-20260719-6}"
+SCRIPT_VERSION="${SCRIPT_VERSION:-20260720-1}"
+DEFAULT_YTDL_OPTIONS='{"remote_components":["ejs:github"]}'
+YTDL_OPTIONS_VALUE="${YTDL_OPTIONS:-$DEFAULT_YTDL_OPTIONS}"
 
 if [ "${EUID:-$(id -u)}" -ne 0 ]; then
   echo "请用 root 运行，或者在命令前加 sudo。"
@@ -105,6 +107,7 @@ services:
       - MAX_CONCURRENT_DOWNLOADS=3
       - DELETE_FILE_ON_TRASHCAN=true
       - DEFAULT_THEME=auto
+      - YTDL_OPTIONS=$YTDL_OPTIONS_VALUE
       - TITLE_TRANSLATE_ENABLED=${TITLE_TRANSLATE_ENABLED:-true}
       - TITLE_TRANSLATE_TARGET_LANG=${TITLE_TRANSLATE_TARGET_LANG:-zh-CN}
       - TITLE_TRANSLATE_API_BASE=${TITLE_TRANSLATE_API_BASE:-}

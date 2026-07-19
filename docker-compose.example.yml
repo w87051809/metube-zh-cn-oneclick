@@ -24,6 +24,7 @@ services:
       - MAX_CONCURRENT_DOWNLOADS=3
       - DELETE_FILE_ON_TRASHCAN=true
       - DEFAULT_THEME=auto
+      - YTDL_OPTIONS={"remote_components":["ejs:github"]}
       - TITLE_TRANSLATE_ENABLED=true
       - TITLE_TRANSLATE_TARGET_LANG=zh-CN
       - TITLE_TRANSLATE_API_BASE=${TITLE_TRANSLATE_API_BASE:-}
