@@ -18,10 +18,15 @@ curl -fsSL https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/mai
 curl -fsSL https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/main/install.sh | sudo env PORT=18081 bash
 ```
 
+## 默认下载内容
+
+网页默认是素材包模式：点一次下载，会同时添加 MP4 视频、SRT 字幕、JPG 封面图。
+
+音频不会单独下载。
+
 ## 改完配置后重启
 
 ```bash
 cd /www/metube
 docker compose up -d
 ```
-

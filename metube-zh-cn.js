@@ -304,6 +304,50 @@
           margin-right: 6px;
         }
       }
+      .metube-material-bundle {
+        max-width: 960px;
+        margin: .75rem auto 0;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px 14px;
+        color: var(--bs-body-color);
+        font-size: .95rem;
+      }
+      .metube-material-bundle strong {
+        font-weight: 600;
+      }
+      .metube-material-bundle label {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin: 0;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+      .metube-material-bundle input {
+        margin: 0;
+      }
+      .metube-material-hint {
+        color: var(--bs-secondary-color);
+        font-size: .85rem;
+      }
+      .metube-material-toast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 99999;
+        max-width: min(420px, calc(100vw - 36px));
+        padding: 10px 12px;
+        border-radius: 6px;
+        color: #fff;
+        background: rgba(25, 135, 84, .96);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, .2);
+        font-size: 14px;
+      }
+      .metube-material-toast.is-error {
+        background: rgba(220, 53, 69, .96);
+      }
     `;
     document.head.appendChild(style);
   }
@@ -518,6 +562,183 @@
     }
   }
 
+  let defaultMp4Applied = false;
+  function applyDefaultMp4Format() {
+    if (defaultMp4Applied) return;
+
+    const formatSelect = Array.from(document.querySelectorAll("select")).find((select) => {
+      const optionTexts = Array.from(select.options).map((option) => cleanText(option.textContent || option.label || ""));
+      return optionTexts.some((text) => text === "MP4") && optionTexts.some((text) => text.includes("iOS"));
+    });
+    if (!formatSelect) return;
+
+    const currentText = cleanText(formatSelect.selectedOptions[0]?.textContent || "");
+    const currentValue = String(formatSelect.value || "").toLowerCase();
+    const isStillDefault = currentText === "自动" || currentText === "Auto" || currentValue.includes("any") || formatSelect.selectedIndex === 0;
+    if (!isStillDefault) {
+      defaultMp4Applied = true;
+      return;
+    }
+
+    const mp4Option = Array.from(formatSelect.options).find((option) => cleanText(option.textContent || option.label || "") === "MP4");
+    if (!mp4Option) return;
+
+    formatSelect.value = mp4Option.value;
+    mp4Option.selected = true;
+    formatSelect.dispatchEvent(new Event("input", { bubbles: true }));
+    formatSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    defaultMp4Applied = true;
+  }
+
+  function findTypeSelect() {
+    return Array.from(document.querySelectorAll("select")).find((select) => {
+      const optionTexts = Array.from(select.options).map((option) => cleanText(option.textContent || option.label || ""));
+      return optionTexts.includes("视频") && optionTexts.includes("字幕") && optionTexts.includes("封面图");
+    });
+  }
+
+  function findUrlInput() {
+    const inputs = Array.from(document.querySelectorAll("input, textarea")).filter((input) => {
+      const rect = input.getBoundingClientRect();
+      const type = String(input.getAttribute("type") || "text").toLowerCase();
+      return rect.width > 160 && rect.height > 10 && !input.disabled && !["checkbox", "radio", "file", "hidden"].includes(type);
+    });
+    return inputs.find((input) => /视频|频道|播放列表|video|channel|playlist/i.test(input.getAttribute("placeholder") || "")) || inputs[0] || null;
+  }
+
+  function installMaterialBundleControls() {
+    installThumbnailStyles();
+    if (document.getElementById("metube-material-bundle")) return;
+    const typeSelect = findTypeSelect();
+    if (!typeSelect) return;
+
+    const bundle = document.createElement("div");
+    bundle.id = "metube-material-bundle";
+    bundle.className = "metube-material-bundle";
+    bundle.innerHTML = `
+      <strong>素材包</strong>
+      <label><input type="checkbox" data-material-asset="video" checked> MP4视频</label>
+      <label><input type="checkbox" data-material-asset="captions" checked> 字幕SRT</label>
+      <label><input type="checkbox" data-material-asset="thumbnail" checked> 封面JPG</label>
+      <span class="metube-material-hint">点“下载”时一次添加这些任务，不单独下音频。</span>
+    `;
+
+    const row = typeSelect.closest(".row") || typeSelect.parentElement?.parentElement || typeSelect.parentElement;
+    if (row && row.parentElement) {
+      row.insertAdjacentElement("afterend", bundle);
+    }
+  }
+
+  function selectedMaterialAssets() {
+    const checked = Array.from(document.querySelectorAll("#metube-material-bundle input[data-material-asset]:checked"))
+      .map((input) => input.getAttribute("data-material-asset"));
+    return checked.length ? checked : ["video", "captions", "thumbnail"];
+  }
+
+  function showMaterialToast(message, level = "success") {
+    const toast = document.createElement("div");
+    toast.className = `metube-material-toast${level === "error" ? " is-error" : ""}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), level === "error" ? 6000 : 3500);
+  }
+
+  function materialPayload(url, asset) {
+    const base = {
+      url,
+      folder: "",
+      custom_name_prefix: "",
+      playlist_item_limit: 1,
+      auto_start: true,
+      split_by_chapters: false,
+      chapter_template: "%(title)s - %(section_number)02d - %(section_title)s.%(ext)s",
+      subtitle_language: "en",
+      subtitle_mode: "prefer_manual",
+      ytdl_options_presets: [],
+      ytdl_options_overrides: {},
+    };
+
+    if (asset === "video") {
+      return { ...base, download_type: "video", codec: "auto", format: "mp4", quality: "best" };
+    }
+    if (asset === "captions") {
+      return { ...base, download_type: "captions", codec: "auto", format: "srt", quality: "best" };
+    }
+    return { ...base, download_type: "thumbnail", codec: "auto", format: "jpg", quality: "best" };
+  }
+
+  async function postMaterialAsset(payload) {
+    const response = await fetch(new URL("add", window.location.href), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const raw = await response.text();
+    let data = {};
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch (_) {
+      data = { status: response.ok ? "ok" : "error", msg: raw };
+    }
+    if (!response.ok || data.status === "error") {
+      throw new Error(translateDetail(data.msg || response.statusText || "添加失败"));
+    }
+    return data;
+  }
+
+  function isMainDownloadButton(button) {
+    const text = cleanText(button.textContent || button.getAttribute("aria-label") || "");
+    if (text !== "下载" && text !== "Download") return false;
+    const input = findUrlInput();
+    if (!input) return false;
+    const inputRect = input.getBoundingClientRect();
+    const buttonRect = button.getBoundingClientRect();
+    return buttonRect.top < inputRect.bottom + 80 && buttonRect.bottom > inputRect.top - 80;
+  }
+
+  let materialSubmitInProgress = false;
+  async function handleMaterialDownloadClick(event) {
+    const button = event.target.closest?.("button");
+    if (!button || button.disabled || !isMainDownloadButton(button)) return;
+    const bundle = document.getElementById("metube-material-bundle");
+    if (!bundle) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    if (materialSubmitInProgress) return;
+    const input = findUrlInput();
+    const url = cleanText(input?.value || "");
+    if (!url) {
+      showMaterialToast("请输入一个链接", "error");
+      return;
+    }
+
+    const assets = selectedMaterialAssets();
+    const oldText = button.textContent;
+    materialSubmitInProgress = true;
+    button.disabled = true;
+    button.textContent = "正在添加素材包...";
+    try {
+      for (const asset of assets) {
+        await postMaterialAsset(materialPayload(url, asset));
+      }
+      showMaterialToast(`已添加素材包：${assets.length} 个任务`);
+      input.value = "";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      refreshThumbnailIndex();
+    } catch (error) {
+      showMaterialToast(`素材包添加失败：${error.message || error}`, "error");
+    } finally {
+      materialSubmitInProgress = false;
+      button.disabled = false;
+      button.textContent = oldText;
+    }
+  }
+
+  document.addEventListener("click", handleMaterialDownloadClick, true);
+
   let scheduled = false;
   function scheduleTranslate() {
     if (scheduled) return;
@@ -527,6 +748,8 @@
       document.documentElement.lang = "zh-CN";
       translateTree(document.body);
       enhanceThumbnails();
+      applyDefaultMp4Format();
+      installMaterialBundleControls();
     });
   }
 

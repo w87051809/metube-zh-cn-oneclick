@@ -11,6 +11,7 @@ services:
       - /www/临时文件/metube-temp:/temp
       - /www/metube/custom/index.html:/app/ui/dist/metube/browser/index.html:ro
       - /www/metube/custom/metube-zh-cn.js:/app/ui/dist/metube/browser/metube-zh-cn.js:ro
+      - /www/metube/custom/ytdl.py:/app/app/ytdl.py:ro
     environment:
       - DOWNLOAD_DIR=/downloads
       - STATE_DIR=/state
@@ -21,4 +22,3 @@ services:
       - MAX_CONCURRENT_DOWNLOADS=3
       - DELETE_FILE_ON_TRASHCAN=true
       - DEFAULT_THEME=auto
-

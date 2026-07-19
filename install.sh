@@ -9,7 +9,7 @@ DOWNLOAD_DIR="${DOWNLOAD_DIR:-/mnt/2TB/优兔视频}"
 PORT="${PORT:-8081}"
 IMAGE="${IMAGE:-ghcr.io/alexta69/metube:latest}"
 RAW_BASE="${RAW_BASE:-https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/main}"
-SCRIPT_VERSION="${SCRIPT_VERSION:-20260718-9}"
+SCRIPT_VERSION="${SCRIPT_VERSION:-20260719-2}"
 
 if [ "${EUID:-$(id -u)}" -ne 0 ]; then
   echo "请用 root 运行，或者在命令前加 sudo。"
@@ -37,6 +37,9 @@ mkdir -p "$APP_DIR" "$CUSTOM_DIR" "$STATE_DIR" "$TEMP_DIR" "$DOWNLOAD_DIR"
 
 echo "下载中文覆盖脚本..."
 curl -fsSL "$RAW_BASE/metube-zh-cn.js" -o "$CUSTOM_DIR/metube-zh-cn.js"
+
+echo "下载后端素材包补丁..."
+curl -fsSL "$RAW_BASE/ytdl.py" -o "$CUSTOM_DIR/ytdl.py"
 
 echo "拉取 MeTube 镜像..."
 docker pull "$IMAGE"
@@ -87,6 +90,7 @@ services:
       - $TEMP_DIR:/temp
       - $CUSTOM_DIR/index.html:/app/ui/dist/metube/browser/index.html:ro
       - $CUSTOM_DIR/metube-zh-cn.js:/app/ui/dist/metube/browser/metube-zh-cn.js:ro
+      - $CUSTOM_DIR/ytdl.py:/app/app/ytdl.py:ro
     environment:
       - DOWNLOAD_DIR=/downloads
       - STATE_DIR=/state
@@ -110,4 +114,3 @@ echo "视频保存目录：$DOWNLOAD_DIR"
 echo "配置文件：$APP_DIR/docker-compose.yml"
 echo
 echo "注意：已完成列表点删除，会同时删除硬盘里的对应视频文件。"
-
