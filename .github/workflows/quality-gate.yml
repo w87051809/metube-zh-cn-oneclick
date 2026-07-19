@@ -1,0 +1,47 @@
+name: Quality Gate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Syntax checks
+        run: |
+          set -euo pipefail
+          bash -n install.sh
+          node --check metube-zh-cn.js
+          python -m py_compile ytdl.py subscriptions.py dl_formats.py
+
+      - name: Secret and local address scan
+        run: |
+          set -euo pipefail
+          if grep -RInE \
+            --exclude-dir=.git \
+            --exclude=quality-gate.yml \
+            --exclude=release-process.md \
+            '(Password字段|LOGIN_INFO=|__Secure-[A-Z0-9_]+=|sk-[A-Za-z0-9_-]{8,}|192\.168\.[0-9]+\.[0-9]+|10\.[0-9]+\.[0-9]+\.[0-9]+|172\.(1[6-9]|2[0-9]|3[0-1])\.[0-9]+\.[0-9]+)' \
+            .; then
+            echo "Found possible secret, cookie, API key, or private IP. Remove it before publishing."
+            exit 1
+          fi

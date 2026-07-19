@@ -116,6 +116,16 @@ docker compose pull
 docker compose up -d
 ```
 
+## 发布与质量
+
+本仓库以后按正式发布流程维护：
+
+- 变更日志：[CHANGELOG.md](CHANGELOG.md)
+- 发布流程：[docs/release-process.md](docs/release-process.md)
+- 安全提醒：[SECURITY.md](SECURITY.md)
+
+正式 Release 会写清变更、验证结果、升级说明和回滚办法。普通文档小修先进 `Unreleased`，不再连续发一堆小版本。
+
 ## 原始作者
 
 - 原始项目：MeTube

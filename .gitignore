@@ -11,7 +11,7 @@ metube-index.html
 metube-main-*.js
 .playwright-cli/
 node_modules/
+__pycache__/
 dist/
 tmp/
 temp/
-

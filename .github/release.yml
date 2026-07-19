@@ -1,0 +1,23 @@
+changelog:
+  categories:
+    - title: 功能
+      labels:
+        - feature
+        - enhancement
+    - title: 修复
+      labels:
+        - fix
+        - bug
+    - title: 安全
+      labels:
+        - security
+    - title: 文档
+      labels:
+        - documentation
+    - title: 维护
+      labels:
+        - maintenance
+        - ci
+    - title: 其他
+      labels:
+        - "*"
