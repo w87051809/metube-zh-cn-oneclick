@@ -4,6 +4,7 @@ import yt_dlp
 import collections
 import collections.abc
 import copy
+import json
 import pickle
 from collections import OrderedDict
 import time
@@ -17,6 +18,9 @@ import signal
 import sys
 import types
 from typing import Any, Optional
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+from urllib.error import URLError, HTTPError
 
 import yt_dlp.networking.impersonate
 from yt_dlp.postprocessor.common import PostProcessor
@@ -29,6 +33,9 @@ from subscriptions import _entry_id
 from url_guard import validate_url
 
 log = logging.getLogger('ytdl')
+
+_CJK_RE = re.compile(r'[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]')
+_TITLE_TRANSLATION_CACHE: dict[str, str] = {}
 
 # Python 3.14 switches the default multiprocessing start method on Linux
 # (this app's only supported deployment target, per the Dockerfile) from fork
@@ -139,6 +146,176 @@ def _sanitize_path_component(value: Any) -> Any:
     value = _WINDOWS_INVALID_PATH_CHARS.sub('_', value)
     value = _PATH_SEP_OR_TRAVERSAL.sub('_', value)
     return value.lstrip('.').strip() or '_'
+
+
+def _truthy_env(name: str, default: bool = True) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() not in {"0", "false", "no", "off", "disabled"}
+
+
+def _translation_timeout() -> float:
+    raw = os.environ.get("TITLE_TRANSLATE_TIMEOUT", "20")
+    try:
+        return max(1.0, min(float(raw), 60.0))
+    except (TypeError, ValueError):
+        return 20.0
+
+
+def _clean_translated_title(value: Any) -> str:
+    text = str(value or "").strip()
+    text = re.sub(r"^```(?:\w+)?\s*|\s*```$", "", text).strip()
+    text = text.strip("\"'“”‘’`")
+    text = re.sub(r"\s+", " ", text).strip()
+    if "\n" in text:
+        text = next((line.strip() for line in text.splitlines() if line.strip()), text).strip()
+    return text
+
+
+def _translate_title_with_chat_api(title: str, target_lang: str) -> Optional[str]:
+    base_url = os.environ.get("TITLE_TRANSLATE_API_BASE", "").strip().rstrip("/")
+    api_key = os.environ.get("TITLE_TRANSLATE_API_KEY", "").strip()
+    model = os.environ.get("TITLE_TRANSLATE_MODEL", "gpt-5.5").strip() or "gpt-5.5"
+    if not base_url or not api_key:
+        return None
+
+    endpoints = []
+    if base_url.endswith("/v1"):
+        endpoints.append(f"{base_url}/chat/completions")
+    else:
+        endpoints.append(f"{base_url}/v1/chat/completions")
+        endpoints.append(f"{base_url}/chat/completions")
+
+    body = json.dumps(
+        {
+            "model": model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "你是视频标题翻译器。把标题翻译成简体中文，保留游戏名、频道名、"
+                        "人名和常见专有名词；不要解释，不要加引号，只返回一个适合做文件名的中文标题。"
+                    ),
+                },
+                {"role": "user", "content": title},
+            ],
+            "temperature": 0,
+        },
+        ensure_ascii=False,
+    ).encode("utf-8")
+
+    last_error = None
+    for endpoint in endpoints:
+        request = Request(
+            endpoint,
+            data=body,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "User-Agent": "MeTube title translator",
+            },
+            method="POST",
+        )
+        try:
+            with urlopen(request, timeout=_translation_timeout()) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+            content = (
+                payload.get("choices", [{}])[0]
+                .get("message", {})
+                .get("content", "")
+            )
+            return _clean_translated_title(content)
+        except (HTTPError, URLError, TimeoutError, OSError, json.JSONDecodeError, KeyError, IndexError) as exc:
+            last_error = exc
+            if isinstance(exc, HTTPError) and exc.code not in (404, 405):
+                break
+
+    if last_error is not None:
+        log.warning("Title translation API failed: %s", last_error)
+    return None
+
+
+def _translate_title_with_google(title: str, target_lang: str) -> Optional[str]:
+    query = urlencode(
+        {
+            "client": "gtx",
+            "sl": "auto",
+            "tl": target_lang,
+            "dt": "t",
+            "q": title,
+        }
+    )
+    request = Request(
+        f"https://translate.googleapis.com/translate_a/single?{query}",
+        headers={"User-Agent": "Mozilla/5.0"},
+    )
+    try:
+        with urlopen(request, timeout=_translation_timeout()) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        return _clean_translated_title(
+            "".join(part[0] for part in payload[0] if part and part[0])
+        )
+    except (HTTPError, URLError, TimeoutError, OSError, json.JSONDecodeError, KeyError, IndexError, TypeError) as exc:
+        log.warning("Google title translation fallback failed: %s", exc)
+        return None
+
+
+def _translate_title_to_zh(title: Any) -> str:
+    text = str(title or "").strip()
+    if not text:
+        return text
+    if not _truthy_env("TITLE_TRANSLATE_ENABLED", True):
+        return text
+    if _CJK_RE.search(text):
+        return text
+    if text in _TITLE_TRANSLATION_CACHE:
+        return _TITLE_TRANSLATION_CACHE[text]
+
+    target_lang = os.environ.get("TITLE_TRANSLATE_TARGET_LANG", "zh-CN").strip() or "zh-CN"
+    translated = _translate_title_with_chat_api(text, target_lang)
+    if not translated:
+        translated = _translate_title_with_google(text, target_lang)
+
+    if translated and translated != text:
+        _TITLE_TRANSLATION_CACHE[text] = translated
+        return translated
+
+    _TITLE_TRANSLATION_CACHE[text] = text
+    return text
+
+
+def _apply_translated_title(entry: dict) -> None:
+    title = entry.get("title")
+    if not title:
+        return
+    translated = _translate_title_to_zh(title)
+    if translated and translated != title:
+        entry.setdefault("original_title", title)
+        entry["title"] = translated
+
+
+def _resolve_title_outtmpl_field(template: str, title: Any) -> str:
+    safe_title = _sanitize_path_component(_clean_translated_title(title))
+    if not safe_title:
+        return template
+
+    matches = list(_OUTTMPL_FIELD_RE.finditer(template))
+    if not matches:
+        return template
+
+    with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+        for match in reversed(matches):
+            key = match.group('key')
+            if key is None:
+                continue
+            root = re.match(r'\w+', key)
+            if root is None or root.group(0) != "title":
+                continue
+            resolved = ydl.evaluate_outtmpl(match.group(0), {"title": safe_title})
+            template = template[:match.start()] + resolved + template[match.end():]
+
+    return template
 
 
 def _output_dir_escapes(base_dir: str, output_template: str) -> bool:
@@ -344,6 +521,7 @@ class DownloadInfo:
     ):
         self.id = id if len(custom_name_prefix) == 0 else f'{custom_name_prefix}.{id}'
         self.title = title if len(custom_name_prefix) == 0 else f'{custom_name_prefix}.{title}'
+        self.filename_title = title
         self.source_url = _strip_metube_asset_fragment(url)
         self.url = _download_asset_key(self.source_url, download_type, format, quality)
         self.queue_key = self.url
@@ -377,7 +555,7 @@ class DownloadInfo:
     # clients: ``entry`` is the full yt-dlp info-dict (potentially large and
     # re-sent on every progress tick) and ``subtitle_files`` is only used
     # internally to derive the primary caption ``filename``.
-    _PUBLIC_EXCLUDED_FIELDS = ("entry", "subtitle_files")
+    _PUBLIC_EXCLUDED_FIELDS = ("entry", "subtitle_files", "filename_title")
 
     def to_public_dict(self) -> dict:
         """Return the client-facing view, omitting server-only/bulky fields."""
@@ -451,6 +629,8 @@ class DownloadInfo:
             self.entry = None
         if not hasattr(self, "subtitle_files"):
             self.subtitle_files = []
+        if not hasattr(self, "filename_title"):
+            self.filename_title = getattr(self, "title", "")
         if not hasattr(self, "chapter_files"):
             self.chapter_files = []
         if not hasattr(self, "clip_start"):
@@ -686,7 +866,11 @@ class Download:
 
             # Add chapter splitting options if enabled
             if self.info.split_by_chapters:
-                ytdl_params['outtmpl']['chapter'] = self.info.chapter_template
+                chapter_title = getattr(self.info, "filename_title", None) or getattr(self.info, "title", "")
+                ytdl_params['outtmpl']['chapter'] = _resolve_title_outtmpl_field(
+                    self.info.chapter_template,
+                    chapter_title,
+                )
                 if 'postprocessors' not in ytdl_params:
                     ytdl_params['postprocessors'] = []
                 ytdl_params['postprocessors'].append({
@@ -1297,6 +1481,9 @@ class DownloadQueue:
                 output = self.config.OUTPUT_TEMPLATE_CHANNEL
             sanitized = {k: _sanitize_path_component(v) for k, v in entry.items()}
             output = _resolve_outtmpl_fields(output, sanitized, ('channel',))
+        filename_title = getattr(dl, "filename_title", None) or getattr(dl, "title", "")
+        output = _resolve_title_outtmpl_field(output, filename_title)
+        output_chapter = _resolve_title_outtmpl_field(output_chapter, filename_title)
         ytdl_options = self._build_ytdl_options(
             getattr(dl, 'ytdl_options_presets', None),
             getattr(dl, 'ytdl_options_overrides', {}) or {},
@@ -1451,6 +1638,7 @@ class DownloadQueue:
             return {'status': 'ok'}
         elif etype == 'video':
             log.debug('Processing as a video')
+            _apply_translated_title(entry)
             source_url = entry.get('webpage_url') or entry['url']
             key = _download_asset_key(source_url, download_type, format, quality)
             if key in self._canceled_urls:
