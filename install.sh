@@ -9,7 +9,7 @@ DOWNLOAD_DIR="${DOWNLOAD_DIR:-/mnt/2TB/优兔视频}"
 PORT="${PORT:-8081}"
 IMAGE="${IMAGE:-ghcr.io/alexta69/metube:latest}"
 RAW_BASE="${RAW_BASE:-https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/main}"
-SCRIPT_VERSION="${SCRIPT_VERSION:-20260719-3}"
+SCRIPT_VERSION="${SCRIPT_VERSION:-20260719-4}"
 
 if [ "${EUID:-$(id -u)}" -ne 0 ]; then
   echo "请用 root 运行，或者在命令前加 sudo。"
