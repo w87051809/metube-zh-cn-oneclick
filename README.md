@@ -1,5 +1,7 @@
 # MeTube 中文一键安装版
 
+**原始作者：** [alexta69](https://github.com/alexta69) ｜ **本仓库维护者：** [w87051809](https://github.com/w87051809)
+
 这是一个给 [MeTube](https://github.com/alexta69/metube) 做的中文覆盖和一键安装脚本。
 
 它不会重新打包 MeTube 镜像，只是使用官方 Docker 镜像 `ghcr.io/alexta69/metube:latest`，再挂载中文前端覆盖脚本和一个很小的后端补丁。
