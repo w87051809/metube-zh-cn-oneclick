@@ -8,7 +8,6 @@ services:
     volumes:
       - /mnt/2TB/优兔视频:/downloads
       - /www/metube/state:/state
-      - /www/临时文件/metube-temp:/temp
       - /www/metube/custom/index.html:/app/ui/dist/metube/browser/index.html:ro
       - /www/metube/custom/metube-zh-cn.js:/app/ui/dist/metube/browser/metube-zh-cn.js:ro
       - /www/metube/custom/dl_formats.py:/app/app/dl_formats.py:ro
@@ -17,7 +16,7 @@ services:
     environment:
       - DOWNLOAD_DIR=/downloads
       - STATE_DIR=/state
-      - TEMP_DIR=/temp
+      - TEMP_DIR=/downloads/.下载临时文件
       - SUBSCRIPTION_DEFAULT_CHECK_INTERVAL=5
       - SUBSCRIPTION_SCAN_PLAYLIST_END=50
       - DEFAULT_OPTION_PLAYLIST_ITEM_LIMIT=1

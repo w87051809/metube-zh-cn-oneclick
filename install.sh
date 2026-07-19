@@ -4,8 +4,8 @@ set -euo pipefail
 APP_DIR="${APP_DIR:-/www/metube}"
 CUSTOM_DIR="${CUSTOM_DIR:-$APP_DIR/custom}"
 STATE_DIR="${STATE_DIR:-$APP_DIR/state}"
-TEMP_DIR="${TEMP_DIR:-/www/临时文件/metube-temp}"
 DOWNLOAD_DIR="${DOWNLOAD_DIR:-/mnt/2TB/优兔视频}"
+DOWNLOAD_TEMP_DIR="${DOWNLOAD_TEMP_DIR:-$DOWNLOAD_DIR/.下载临时文件}"
 PORT="${PORT:-8081}"
 IMAGE="${IMAGE:-ghcr.io/alexta69/metube:latest}"
 RAW_BASE="${RAW_BASE:-https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/main}"
@@ -35,7 +35,7 @@ if ! docker compose version >/dev/null 2>&1; then
 fi
 
 echo "创建目录..."
-mkdir -p "$APP_DIR" "$CUSTOM_DIR" "$STATE_DIR" "$TEMP_DIR" "$DOWNLOAD_DIR"
+mkdir -p "$APP_DIR" "$CUSTOM_DIR" "$STATE_DIR" "$DOWNLOAD_DIR" "$DOWNLOAD_TEMP_DIR"
 
 echo "下载中文覆盖脚本..."
 curl -fsSL "$RAW_BASE/metube-zh-cn.js" -o "$CUSTOM_DIR/metube-zh-cn.js"
@@ -91,7 +91,6 @@ services:
     volumes:
       - $DOWNLOAD_DIR:/downloads
       - $STATE_DIR:/state
-      - $TEMP_DIR:/temp
       - $CUSTOM_DIR/index.html:/app/ui/dist/metube/browser/index.html:ro
       - $CUSTOM_DIR/metube-zh-cn.js:/app/ui/dist/metube/browser/metube-zh-cn.js:ro
       - $CUSTOM_DIR/dl_formats.py:/app/app/dl_formats.py:ro
@@ -100,7 +99,7 @@ services:
     environment:
       - DOWNLOAD_DIR=/downloads
       - STATE_DIR=/state
-      - TEMP_DIR=/temp
+      - TEMP_DIR=/downloads/.下载临时文件
       - SUBSCRIPTION_DEFAULT_CHECK_INTERVAL=5
       - SUBSCRIPTION_SCAN_PLAYLIST_END=50
       - DEFAULT_OPTION_PLAYLIST_ITEM_LIMIT=1
@@ -123,6 +122,7 @@ echo
 echo "安装完成。"
 echo "访问地址：http://服务器IP:$PORT/"
 echo "视频保存目录：$DOWNLOAD_DIR"
+echo "临时下载目录：$DOWNLOAD_TEMP_DIR"
 echo "配置文件：$APP_DIR/docker-compose.yml"
 echo
 echo "注意：已完成列表点删除，会同时删除硬盘里的对应视频文件。"

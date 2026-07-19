@@ -806,6 +806,18 @@ class Download:
             ydl.add_post_processor(_AlbumArtistPostProcessor(ydl), when='pre_process')
         return ydl
 
+    def _prefer_final_download_path(self, path):
+        if not path:
+            return path
+        real_download_dir = os.path.realpath(self.download_dir)
+        real_path = os.path.realpath(path)
+        if _is_within_directory(real_download_dir, real_path):
+            return path
+        final_candidate = os.path.join(self.download_dir, os.path.basename(path))
+        if os.path.exists(final_candidate):
+            return final_candidate
+        return path
+
     def _download(self):
         # Run in our own process group so cancel() can SIGKILL the whole
         # group (yt-dlp + any ffmpeg children it spawned for merge/postproc),
@@ -974,7 +986,7 @@ class Download:
                 return
             self.tmpfilename = status.get('tmpfilename')
             if 'filename' in status:
-                fileName = status.get('filename')
+                fileName = self._prefer_final_download_path(status.get('filename'))
                 rel_name = os.path.relpath(fileName, self.download_dir)
                 # For captions mode, ignore media-like placeholders and let subtitle_file
                 # statuses define the final file shown in the UI.
@@ -1010,7 +1022,7 @@ class Download:
                 subtitle_file = status.get('subtitle_file')
                 if not subtitle_file:
                     continue
-                subtitle_output_file = subtitle_file
+                subtitle_output_file = self._prefer_final_download_path(subtitle_file)
 
                 # txt mode is derived from SRT by stripping cue metadata.
                 if getattr(self.info, 'download_type', '') == 'captions' and str(getattr(self.info, 'format', '')).lower() == 'txt':

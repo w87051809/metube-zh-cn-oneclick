@@ -11,6 +11,7 @@ import time
 import types
 import uuid
 from dataclasses import dataclass, field, fields
+from datetime import datetime, timezone
 from functools import partial
 from typing import Any, Optional
 
@@ -148,6 +149,89 @@ def _entry_id(entry: dict) -> Optional[str]:
 def _is_subscriber_only_entry(entry: dict) -> bool:
     """True when yt-dlp marks the entry as channel member-only (subscriber_only availability)."""
     return str(entry.get("availability") or "") == "subscriber_only"
+
+
+def _entry_publish_timestamp(entry: dict) -> Optional[float]:
+    for field_name in ("timestamp", "release_timestamp", "modified_timestamp"):
+        value = entry.get(field_name)
+        if value is None:
+            continue
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            pass
+
+    upload_date = entry.get("upload_date")
+    if upload_date:
+        try:
+            dt = datetime.strptime(str(upload_date), "%Y%m%d").replace(tzinfo=timezone.utc)
+            return dt.timestamp()
+        except ValueError:
+            return None
+    return None
+
+
+def _entry_is_recent(entry: dict, *, now: Optional[float] = None, seconds: int = 24 * 60 * 60) -> bool:
+    published_at = _entry_publish_timestamp(entry)
+    if published_at is None:
+        return False
+    now = time.time() if now is None else now
+    return (now - seconds) <= published_at <= (now + 60 * 60)
+
+
+def _extract_video_metadata(
+    config,
+    entry: dict,
+    *,
+    extra_opts: Optional[dict[str, Any]] = None,
+) -> dict:
+    vurl = _entry_video_url(entry)
+    if not vurl:
+        return entry
+    params = _build_ydl_params(config, playlistend=1, extra_opts=extra_opts)
+    params.pop("extract_flat", None)
+    params.pop("lazy_playlist", None)
+    params["noplaylist"] = True
+    with yt_dlp.YoutubeDL(params=params) as ydl:
+        full_info = ydl.extract_info(vurl, download=False) or {}
+    merged = dict(entry)
+    merged.update(full_info)
+    merged["webpage_url"] = full_info.get("webpage_url") or vurl
+    return merged
+
+
+def _split_initial_subscription_entries(
+    config,
+    entries: list[dict],
+    *,
+    extra_opts: Optional[dict[str, Any]] = None,
+) -> tuple[list[dict], list[str]]:
+    recent_seconds = max(60, int(getattr(config, "SUBSCRIPTION_INITIAL_RECENT_SECONDS", 24 * 60 * 60)))
+    check_limit = max(1, int(getattr(config, "SUBSCRIPTION_INITIAL_RECENT_CHECK_LIMIT", 5)))
+    now = time.time()
+    queue_entries: list[dict] = []
+    seen_ids: list[str] = []
+
+    for idx, ent in enumerate(entries):
+        if ent.get("live_status") == "is_upcoming":
+            continue
+        eid = _entry_id(ent)
+        if not eid:
+            continue
+
+        inspected = ent
+        if idx < check_limit and _entry_publish_timestamp(inspected) is None:
+            try:
+                inspected = _extract_video_metadata(config, ent, extra_opts=extra_opts)
+            except yt_dlp.utils.YoutubeDLError as exc:
+                log.warning("Could not resolve initial subscription entry %s: %s", _entry_video_url(ent), exc)
+
+        if idx < check_limit and _entry_is_recent(inspected, now=now, seconds=recent_seconds):
+            queue_entries.append(inspected)
+        else:
+            seen_ids.append(eid)
+
+    return queue_entries, seen_ids
 
 
 def _subscription_asset_key(url: Any, download_type: Any, format: Any, quality: Any) -> str:
@@ -634,13 +718,15 @@ class SubscriptionManager:
             )
 
             seen_entries = [ent for ent in entries if _is_media_entry(ent)]
-            all_ids: list[str] = []
-            for ent in seen_entries:
-                if ent.get("live_status") == "is_upcoming":
-                    continue  # Don't mark scheduled streams as seen; queue them when they go live
-                eid = _entry_id(ent)
-                if eid:
-                    all_ids.append(eid)
+            initial_queue_entries, initial_seen_ids = await asyncio.get_running_loop().run_in_executor(
+                None,
+                partial(
+                    _split_initial_subscription_entries,
+                    self.config,
+                    seen_entries,
+                    extra_opts=scan_extra_opts,
+                ),
+            )
 
             sub = SubscriptionInfo(
                 id=str(uuid.uuid4()),
@@ -665,7 +751,7 @@ class SubscriptionManager:
                 title_regex=title_regex_stored,
                 skip_subscriber_only=skip_so,
                 last_checked=time.time(),
-                seen_ids=list(dict.fromkeys(all_ids)),
+                seen_ids=list(dict.fromkeys(initial_seen_ids)),
                 error=None,
             )
 
@@ -682,6 +768,65 @@ class SubscriptionManager:
                     raise
 
             await self.notifier.subscription_added(sub)
+            if initial_queue_entries:
+                queue_entries = list(initial_queue_entries)
+                filtered_ids: list[str] = []
+                if title_regex_stored:
+                    try:
+                        pattern_re = re.compile(title_regex_stored)
+                    except re.error:
+                        pattern_re = None
+                    if pattern_re is not None:
+                        kept_entries: list[dict] = []
+                        for ent in queue_entries:
+                            eid = _entry_id(ent)
+                            title = str(ent.get("title") or "")
+                            if pattern_re.search(title):
+                                kept_entries.append(ent)
+                            elif eid:
+                                filtered_ids.append(eid)
+                        queue_entries = kept_entries
+
+                subscriber_filtered_ids: list[str] = []
+                if skip_so:
+                    kept_entries = []
+                    for ent in queue_entries:
+                        eid = _entry_id(ent)
+                        if _is_subscriber_only_entry(ent):
+                            if eid:
+                                subscriber_filtered_ids.append(eid)
+                            continue
+                        kept_entries.append(ent)
+                    queue_entries = kept_entries
+
+                queued_ids, queue_errors = await self._queue_subscription_entries(
+                    queue_entries,
+                    download_type=download_type,
+                    codec=codec,
+                    format=format,
+                    quality=quality,
+                    folder=folder or "",
+                    custom_name_prefix=custom_name_prefix or "",
+                    playlist_item_limit=int(playlist_item_limit),
+                    auto_start=bool(auto_start),
+                    split_by_chapters=bool(split_by_chapters),
+                    chapter_template=chapter_template or "",
+                    subtitle_language=subtitle_language,
+                    subtitle_mode=subtitle_mode,
+                    ytdl_options_presets=list(ytdl_options_presets or []),
+                    ytdl_options_overrides=dict(ytdl_options_overrides or {}),
+                )
+
+                async with self._lock:
+                    cur = self._subs.get(sub.id)
+                    if cur:
+                        cur.seen_ids = self._normalize_seen_ids(
+                            queued_ids + filtered_ids + subscriber_filtered_ids + cur.seen_ids
+                        )
+                        cur.error = "; ".join(queue_errors[:3]) if queue_errors else None
+                        self._save_locked()
+                        sub = cur
+                await self.notifier.subscription_updated(sub)
             return {"status": "ok", "subscription": sub.to_public_dict()}
         finally:
             async with self._lock:
