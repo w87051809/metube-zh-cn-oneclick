@@ -1,4 +1,6 @@
 (function () {
+  const PROJECT_REPO_URL = "https://github.com/w87051809/metube-zh-cn-oneclick";
+
   const translations = new Map([
     ["MeTube", "MeTube"],
     ["MeTube Logo", "MeTube 标志"],
@@ -243,6 +245,7 @@
     "data-bs-original-title",
     "data-original-title",
   ];
+  const observedAttributeNames = [...attributeNames, "href"];
 
   const thumbnailState = {
     byUrl: new Map(),
@@ -609,6 +612,21 @@
     }
   }
 
+  function rewriteProjectLinks(root = document) {
+    if (!root.querySelectorAll) return;
+    const links = root.querySelectorAll('a[href="https://github.com/alexta69/metube"], a.github-link');
+    links.forEach((link) => {
+      const href = link.getAttribute("href") || "";
+      const text = cleanText(link.textContent || "");
+      if (!link.classList.contains("github-link") && !href.includes("alexta69/metube") && text !== "GitHub") return;
+      if (href !== PROJECT_REPO_URL) link.setAttribute("href", PROJECT_REPO_URL);
+      link.setAttribute("title", "\u6253\u5f00\u672c\u4ed3\u5e93");
+      link.setAttribute("aria-label", "\u6253\u5f00\u672c\u4ed3\u5e93 GitHub");
+      link.setAttribute("target", "_blank");
+      link.setAttribute("rel", "noopener");
+    });
+  }
+
   let defaultAutoFormatApplied = false;
   function applyDefaultAutoFormat() {
     if (defaultAutoFormatApplied) return;
@@ -916,6 +934,7 @@
       scheduled = false;
       document.documentElement.lang = "zh-CN";
       translateTree(document.body);
+      rewriteProjectLinks(document);
       enhanceThumbnails();
       applyDefaultAutoFormat();
       installMaterialBundleControls();
@@ -933,7 +952,7 @@
     childList: true,
     characterData: true,
     attributes: true,
-    attributeFilter: attributeNames,
+    attributeFilter: observedAttributeNames,
   });
 
   scheduleTranslate();
