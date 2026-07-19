@@ -564,9 +564,9 @@
     }
   }
 
-  let defaultAutoFormatApplied = false;
-  function applyDefaultAutoFormat() {
-    if (defaultAutoFormatApplied) return;
+  let defaultMp4Applied = false;
+  function applyDefaultMp4Format() {
+    if (defaultMp4Applied) return;
 
     const formatSelect = Array.from(document.querySelectorAll("select")).find((select) => {
       const optionTexts = Array.from(select.options).map((option) => cleanText(option.textContent || option.label || ""));
@@ -576,24 +576,20 @@
 
     const currentText = cleanText(formatSelect.selectedOptions[0]?.textContent || "");
     const currentValue = String(formatSelect.value || "").toLowerCase();
-    const isAuto = currentText === "自动" || currentText === "Auto" || currentValue.includes("any") || formatSelect.selectedIndex === 0;
-    if (isAuto) {
-      defaultAutoFormatApplied = true;
+    const isMp4 = currentText === "MP4" || currentValue.includes("mp4");
+    if (isMp4) {
+      defaultMp4Applied = true;
       return;
     }
 
-    const autoOption = Array.from(formatSelect.options).find((option) => {
-      const text = cleanText(option.textContent || option.label || "");
-      const value = String(option.value || "").toLowerCase();
-      return text === "自动" || text === "Auto" || value.includes("any");
-    });
-    if (!autoOption) return;
+    const mp4Option = Array.from(formatSelect.options).find((option) => cleanText(option.textContent || option.label || "") === "MP4");
+    if (!mp4Option) return;
 
-    formatSelect.value = autoOption.value;
-    autoOption.selected = true;
+    formatSelect.value = mp4Option.value;
+    mp4Option.selected = true;
     formatSelect.dispatchEvent(new Event("input", { bubbles: true }));
     formatSelect.dispatchEvent(new Event("change", { bubbles: true }));
-    defaultAutoFormatApplied = true;
+    defaultMp4Applied = true;
   }
 
   function findTypeSelect() {
@@ -623,7 +619,7 @@
     bundle.className = "metube-material-bundle";
     bundle.innerHTML = `
       <strong>素材包</strong>
-      <label><input type="checkbox" data-material-asset="video" checked> 视频自动</label>
+      <label><input type="checkbox" data-material-asset="video" checked> MP4优先</label>
       <label><input type="checkbox" data-material-asset="captions" checked> 字幕SRT</label>
       <label><input type="checkbox" data-material-asset="thumbnail" checked> 封面JPG</label>
       <span class="metube-material-hint">点“下载/订阅”时一次添加这些任务，不单独下音频。</span>
@@ -668,7 +664,7 @@
     };
 
     if (asset === "video") {
-      return { ...base, download_type: "video", codec: "auto", format: "any", quality: "best" };
+      return { ...base, download_type: "video", codec: "auto", format: "mp4", quality: "best" };
     }
     if (asset === "captions") {
       return { ...base, download_type: "captions", codec: "auto", format: "srt", quality: "best" };
@@ -782,7 +778,7 @@
       document.documentElement.lang = "zh-CN";
       translateTree(document.body);
       enhanceThumbnails();
-      applyDefaultAutoFormat();
+      applyDefaultMp4Format();
       installMaterialBundleControls();
     });
   }

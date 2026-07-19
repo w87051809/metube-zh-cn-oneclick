@@ -161,7 +161,7 @@ def _subscription_asset_label(download_type: Any, format: Any) -> str:
     dl_format = str(format or "").lower()
     if dl_type == "video":
         if dl_format == "mp4":
-            return "MP4视频"
+            return "MP4优先"
         if dl_format in {"any", "auto", ""}:
             return "视频自动"
         return "视频"

@@ -11,6 +11,7 @@ services:
       - /www/临时文件/metube-temp:/temp
       - /www/metube/custom/index.html:/app/ui/dist/metube/browser/index.html:ro
       - /www/metube/custom/metube-zh-cn.js:/app/ui/dist/metube/browser/metube-zh-cn.js:ro
+      - /www/metube/custom/dl_formats.py:/app/app/dl_formats.py:ro
       - /www/metube/custom/ytdl.py:/app/app/ytdl.py:ro
       - /www/metube/custom/subscriptions.py:/app/app/subscriptions.py:ro
     environment:

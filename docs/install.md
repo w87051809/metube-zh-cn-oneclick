@@ -20,9 +20,11 @@ curl -fsSL https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/mai
 
 ## 默认下载内容
 
-网页默认是素材包模式：点一次下载，会同时添加自动视频、SRT 字幕、JPG 封面图。
+网页默认是素材包模式：点一次下载，会同时添加 MP4优先视频、SRT 字幕、JPG 封面图。
 
-点一次订阅，也会同时创建自动视频、SRT 字幕、JPG 封面图三条订阅。
+点一次订阅，也会同时创建 MP4优先视频、SRT 字幕、JPG 封面图三条订阅。
+
+MP4 找不到合适格式时，会自动兜底成 yt-dlp 能下载的最佳视频。
 
 音频不会单独下载。
 
