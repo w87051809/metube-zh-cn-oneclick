@@ -184,6 +184,8 @@
     [/^Error subscribing URL:\s*(.*)$/i, "订阅失败："],
     [/^Error adding subscription:\s*(.*)$/i, "订阅失败："],
     [/^Subscribe failed:\s*(.*)$/i, "订阅失败："],
+    [/^This material is already subscribed for this URL$/i, "这个素材已经订阅过了"],
+    [/^This URL is already subscribed$/i, "这个链接已经订阅过了"],
     [/^Delete failed:\s*(.*)$/i, "删除失败："],
     [/^Delete completed item:\s*(.*)$/i, "删除已完成项目失败："],
     [/^Delete subscription failed:\s*(.*)$/i, "删除订阅失败："],
@@ -654,6 +656,9 @@
       chapter_template: "%(title)s - %(section_number)02d - %(section_title)s.%(ext)s",
       subtitle_language: "en",
       subtitle_mode: "prefer_manual",
+      check_interval_minutes: 5,
+      title_regex: "",
+      skip_subscriber_only: false,
       ytdl_options_presets: [],
       ytdl_options_overrides: {},
     };
@@ -667,8 +672,12 @@
     return { ...base, download_type: "thumbnail", codec: "auto", format: "jpg", quality: "best" };
   }
 
-  async function postMaterialAsset(payload) {
-    const response = await fetch(new URL("add", window.location.href), {
+  function isAlreadySubscribedMessage(message) {
+    return /already subscribed|已经订阅过/.test(String(message || ""));
+  }
+
+  async function postMaterialAsset(payload, endpoint, options = {}) {
+    const response = await fetch(new URL(endpoint, window.location.href), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -681,25 +690,34 @@
       data = { status: response.ok ? "ok" : "error", msg: raw };
     }
     if (!response.ok || data.status === "error") {
-      throw new Error(translateDetail(data.msg || response.statusText || "添加失败"));
+      const message = translateDetail(data.msg || response.statusText || "添加失败");
+      if (options.ignoreAlreadySubscribed && isAlreadySubscribedMessage(message)) {
+        return { status: "skipped", msg: message };
+      }
+      throw new Error(message);
     }
     return data;
   }
 
-  function isMainDownloadButton(button) {
+  function materialButtonAction(button) {
     const text = cleanText(button.textContent || button.getAttribute("aria-label") || "");
-    if (text !== "下载" && text !== "Download") return false;
+    let action = "";
+    if (text === "下载" || text === "Download") action = "add";
+    if (text === "订阅" || text === "Subscribe") action = "subscribe";
+    if (!action) return "";
     const input = findUrlInput();
-    if (!input) return false;
+    if (!input) return "";
     const inputRect = input.getBoundingClientRect();
     const buttonRect = button.getBoundingClientRect();
-    return buttonRect.top < inputRect.bottom + 80 && buttonRect.bottom > inputRect.top - 80;
+    return buttonRect.top < inputRect.bottom + 80 && buttonRect.bottom > inputRect.top - 80 ? action : "";
   }
 
   let materialSubmitInProgress = false;
-  async function handleMaterialDownloadClick(event) {
+  async function handleMaterialActionClick(event) {
     const button = event.target.closest?.("button");
-    if (!button || button.disabled || !isMainDownloadButton(button)) return;
+    if (!button || button.disabled) return;
+    const action = materialButtonAction(button);
+    if (!action) return;
     const bundle = document.getElementById("metube-material-bundle");
     if (!bundle) return;
 
@@ -717,19 +735,31 @@
 
     const assets = selectedMaterialAssets();
     const oldText = button.textContent;
+    const isSubscribe = action === "subscribe";
     materialSubmitInProgress = true;
     button.disabled = true;
-    button.textContent = "正在添加素材包...";
+    button.textContent = isSubscribe ? "正在订阅素材包..." : "正在添加素材包...";
     try {
+      let skipped = 0;
       for (const asset of assets) {
-        await postMaterialAsset(materialPayload(url, asset));
+        const result = await postMaterialAsset(
+          materialPayload(url, asset),
+          isSubscribe ? "subscribe" : "add",
+          { ignoreAlreadySubscribed: isSubscribe },
+        );
+        if (result.status === "skipped") skipped += 1;
       }
-      showMaterialToast(`已添加素材包：${assets.length} 个任务`);
+      if (isSubscribe) {
+        const added = Math.max(assets.length - skipped, 0);
+        showMaterialToast(skipped ? `素材包订阅已处理：新增 ${added} 条，已存在 ${skipped} 条` : `已添加素材包订阅：${assets.length} 条`);
+      } else {
+        showMaterialToast(`已添加素材包：${assets.length} 个任务`);
+      }
       input.value = "";
       input.dispatchEvent(new Event("input", { bubbles: true }));
       refreshThumbnailIndex();
     } catch (error) {
-      showMaterialToast(`素材包添加失败：${error.message || error}`, "error");
+      showMaterialToast(`${isSubscribe ? "素材包订阅失败" : "素材包添加失败"}：${error.message || error}`, "error");
     } finally {
       materialSubmitInProgress = false;
       button.disabled = false;
@@ -737,7 +767,7 @@
     }
   }
 
-  document.addEventListener("click", handleMaterialDownloadClick, true);
+  document.addEventListener("click", handleMaterialActionClick, true);
 
   let scheduled = false;
   function scheduleTranslate() {
