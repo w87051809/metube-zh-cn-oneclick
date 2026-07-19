@@ -4,6 +4,17 @@
 
 它不会重新打包 MeTube 镜像，只是使用官方 Docker 镜像 `ghcr.io/alexta69/metube:latest`，再挂载中文前端覆盖脚本和一个很小的后端补丁。
 
+## 作者和贡献者
+
+| 名字 | 身份 | 说明 |
+| --- | --- | --- |
+| [alexta69](https://github.com/alexta69) | MeTube 原始作者 | 原始项目：[alexta69/metube](https://github.com/alexta69/metube) |
+| [w87051809](https://github.com/w87051809) | 本仓库维护者 | 中文覆盖、一键安装、订阅和素材包增强 |
+
+完整说明见：[CONTRIBUTORS.md](CONTRIBUTORS.md)。
+
+说明：GitHub 右侧的“贡献者”框是 GitHub 按本仓库真实 commit 记录自动生成的，不能手动写名字。本仓库在这里明确写出原始作者，避免别人误会。
+
 ## 一键安装
 
 在 Ubuntu / Debian 服务器上执行：
