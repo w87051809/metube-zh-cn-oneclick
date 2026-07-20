@@ -258,6 +258,70 @@ def _subscription_asset_label(download_type: Any, format: Any) -> str:
     return ""
 
 
+def _public_http_url(value: Any) -> str:
+    url = str(value or "").strip()
+    if not url:
+        return ""
+    if not re.match(r"^https?://", url, re.IGNORECASE):
+        return ""
+    return url
+
+
+def _number_value(value: Any) -> float:
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _best_subscription_thumbnail(info: Optional[dict]) -> str:
+    if not isinstance(info, dict):
+        return ""
+
+    candidates: list[tuple[float, str]] = []
+    direct = _public_http_url(info.get("thumbnail"))
+    if direct:
+        candidates.append((0, direct))
+
+    thumbs = info.get("thumbnails")
+    if isinstance(thumbs, list):
+        for index, thumb in enumerate(thumbs):
+            if not isinstance(thumb, dict):
+                continue
+            url = _public_http_url(thumb.get("url"))
+            if not url:
+                continue
+            width = _number_value(thumb.get("width"))
+            height = _number_value(thumb.get("height"))
+            preference = _number_value(thumb.get("preference"))
+            thumb_id = str(thumb.get("id") or "").lower()
+            score = preference * 1000 + min(width, height) + index / 100
+            if "avatar" in thumb_id:
+                score += 1_000_000
+            elif width and height and abs(width - height) <= max(width, height) * 0.2:
+                score += 500_000
+            if "banner" in thumb_id or (width and height and width > height * 2):
+                score -= 500_000
+            candidates.append((score, url))
+
+    if not candidates:
+        return ""
+    return max(candidates, key=lambda item: item[0])[1]
+
+
+def _subscription_identity(info: Optional[dict], fallback_url: str) -> dict[str, str]:
+    if not isinstance(info, dict):
+        info = {}
+    return {
+        "thumbnail": _best_subscription_thumbnail(info),
+        "channel_id": str(info.get("channel_id") or "").strip(),
+        "channel_url": _public_http_url(
+            info.get("channel_url") or info.get("uploader_url") or info.get("webpage_url") or fallback_url
+        ),
+        "uploader_id": str(info.get("uploader_id") or "").strip(),
+    }
+
+
 def _name_with_asset_label(name: Any, download_type: Any, format: Any) -> str:
     base_name = str(name)
     label = _subscription_asset_label(download_type, format)
@@ -299,6 +363,10 @@ class SubscriptionInfo:
     ytdl_options_overrides: dict[str, Any] = field(default_factory=dict)
     title_regex: str = ""
     skip_subscriber_only: bool = False
+    thumbnail: str = ""
+    channel_id: str = ""
+    channel_url: str = ""
+    uploader_id: str = ""
     last_checked: Optional[float] = None
     seen_ids: list[str] = field(default_factory=list)
     error: Optional[str] = None
@@ -322,6 +390,10 @@ class SubscriptionInfo:
             "folder": self.folder,
             "title_regex": self.title_regex,
             "skip_subscriber_only": self.skip_subscriber_only,
+            "thumbnail": self.thumbnail,
+            "channel_id": self.channel_id,
+            "channel_url": self.channel_url,
+            "uploader_id": self.uploader_id,
             "last_checked": self.last_checked,
             "seen_count": len(self.seen_ids),
             "error": self.error,
@@ -351,6 +423,10 @@ def _subscription_to_record(sub: SubscriptionInfo) -> dict[str, Any]:
         "ytdl_options_overrides": sub.ytdl_options_overrides,
         "title_regex": sub.title_regex,
         "skip_subscriber_only": sub.skip_subscriber_only,
+        "thumbnail": sub.thumbnail,
+        "channel_id": sub.channel_id,
+        "channel_url": sub.channel_url,
+        "uploader_id": sub.uploader_id,
         "last_checked": sub.last_checked,
         "seen_ids": list(sub.seen_ids),
         "error": sub.error,
@@ -716,6 +792,7 @@ class SubscriptionManager:
                 or info.get("uploader")
                 or url
             )
+            identity = _subscription_identity(info, url)
 
             seen_entries = [ent for ent in entries if _is_media_entry(ent)]
             initial_queue_entries, initial_seen_ids = await asyncio.get_running_loop().run_in_executor(
@@ -750,6 +827,10 @@ class SubscriptionManager:
                 ytdl_options_overrides=dict(ytdl_options_overrides or {}),
                 title_regex=title_regex_stored,
                 skip_subscriber_only=skip_so,
+                thumbnail=identity["thumbnail"],
+                channel_id=identity["channel_id"],
+                channel_url=identity["channel_url"],
+                uploader_id=identity["uploader_id"],
                 last_checked=time.time(),
                 seen_ids=list(dict.fromkeys(initial_seen_ids)),
                 error=None,
@@ -984,6 +1065,7 @@ class SubscriptionManager:
             log.warning("Subscription check failed for %s: %s", sub.name, exc)
             await self.notifier.subscription_updated(sub)
             return
+        identity = _subscription_identity(info, sub.url)
         entries = [ent for ent in entries if _is_media_entry(ent)]
 
         etype = (info or {}).get("_type") or "video"
@@ -994,6 +1076,10 @@ class SubscriptionManager:
                     previous = copy.deepcopy(cur)
                     cur.error = VIDEO_ONLY_MSG
                     cur.last_checked = time.time()
+                    cur.thumbnail = identity["thumbnail"] or cur.thumbnail
+                    cur.channel_id = identity["channel_id"] or cur.channel_id
+                    cur.channel_url = identity["channel_url"] or cur.channel_url
+                    cur.uploader_id = identity["uploader_id"] or cur.uploader_id
                     try:
                         self._save_locked()
                     except Exception:
@@ -1010,6 +1096,10 @@ class SubscriptionManager:
                     previous = copy.deepcopy(cur)
                     cur.last_checked = time.time()
                     cur.error = None
+                    cur.thumbnail = identity["thumbnail"] or cur.thumbnail
+                    cur.channel_id = identity["channel_id"] or cur.channel_id
+                    cur.channel_url = identity["channel_url"] or cur.channel_url
+                    cur.uploader_id = identity["uploader_id"] or cur.uploader_id
                     try:
                         self._save_locked()
                     except Exception:
@@ -1134,6 +1224,10 @@ class SubscriptionManager:
             cur.seen_ids = merged
             cur.last_checked = time.time()
             cur.error = "; ".join(queue_errors[:3]) if queue_errors else None
+            cur.thumbnail = identity["thumbnail"] or cur.thumbnail
+            cur.channel_id = identity["channel_id"] or cur.channel_id
+            cur.channel_url = identity["channel_url"] or cur.channel_url
+            cur.uploader_id = identity["uploader_id"] or cur.uploader_id
             try:
                 self._save_locked()
             except Exception:

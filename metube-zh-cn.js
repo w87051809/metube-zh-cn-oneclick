@@ -309,6 +309,11 @@
     byId: new Map(),
     loading: false,
   };
+  const subscriptionState = {
+    byUrl: new Map(),
+    byName: new Map(),
+    loading: false,
+  };
 
   function installThumbnailStyles() {
     if (document.getElementById("metube-thumb-style")) return;
@@ -365,6 +370,50 @@
           height: 20px;
           margin-right: 6px;
         }
+      }
+      .metube-subscription-cell {
+        white-space: nowrap;
+      }
+      .metube-subscription-cell > a,
+      .metube-subscription-cell > input,
+      .metube-subscription-cell > .text-break,
+      .metube-subscription-cell > .flex-grow-1 {
+        max-width: calc(100% - 36px);
+        vertical-align: middle;
+      }
+      .metube-subscription-avatar {
+        width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 24px;
+        overflow: hidden;
+        margin: 0 8px 0 2px;
+        border-radius: 50%;
+        background: rgba(108, 117, 125, .28);
+        border: 1px solid rgba(173, 181, 189, .38);
+        color: rgba(255, 255, 255, .78);
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+        vertical-align: middle;
+      }
+      .metube-subscription-avatar img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+      }
+      .metube-subscription-avatar.is-empty::before {
+        content: attr(data-letter);
+      }
+      td.metube-subscription-cell .d-flex,
+      td.metube-subscription-cell > div {
+        display: inline-flex !important;
+        align-items: center;
+        max-width: calc(100% - 36px);
+        vertical-align: middle;
       }
       .metube-material-bundle {
         max-width: 960px;
@@ -508,6 +557,22 @@
     return getYoutubeIdFromUrl(item.url);
   }
 
+  function normalizeUrlKey(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    try {
+      const url = new URL(raw, window.location.href);
+      url.hash = "";
+      return normalizeKey(url.toString().replace(/\/$/, ""));
+    } catch (_) {
+      return normalizeKey(raw.replace(/\/$/, ""));
+    }
+  }
+
+  function subscriptionBaseName(value) {
+    return cleanText(String(value || "").replace(/\s+-\s+(视频自动|MP4优先|视频|字幕SRT|字幕|封面JPG|封面图|音频)$/u, ""));
+  }
+
   function indexDownloadItem(item) {
     if (!item || typeof item !== "object") return;
     const title = normalizeKey(item.title);
@@ -608,6 +673,113 @@
       const anchor = cell.querySelector("a[href]");
       cell.classList.add("metube-video-thumb-cell");
       cell.insertBefore(createThumbnail(item, anchor && anchor.href), cell.firstChild);
+    }
+  }
+
+  function indexSubscriptionItem(item) {
+    if (!item || typeof item !== "object") return;
+    for (const value of [item.url, item.channel_url]) {
+      const key = normalizeUrlKey(value);
+      if (key) subscriptionState.byUrl.set(key, item);
+    }
+    for (const value of [item.name, subscriptionBaseName(item.name)]) {
+      const key = normalizeKey(value);
+      if (key) subscriptionState.byName.set(key, item);
+    }
+  }
+
+  async function refreshSubscriptionIndex() {
+    if (subscriptionState.loading) return;
+    subscriptionState.loading = true;
+    try {
+      const response = await fetch("subscriptions", { cache: "no-store" });
+      if (!response.ok) return;
+      const data = await response.json();
+      const list = Array.isArray(data) ? data : Array.isArray(data.items) ? data.items : [];
+      const byUrl = new Map();
+      const byName = new Map();
+      subscriptionState.byUrl = byUrl;
+      subscriptionState.byName = byName;
+      for (const item of list) indexSubscriptionItem(item);
+      enhanceSubscriptionAvatars();
+    } catch (_) {
+      // 订阅列表临时不可用时不打扰页面，下一轮会继续补。
+    } finally {
+      subscriptionState.loading = false;
+    }
+  }
+
+  function tableLooksLikeSubscriptions(table) {
+    if (!table) return false;
+    const headerText = cleanText(Array.from(table.querySelectorAll("thead th")).map((th) => th.textContent || "").join(" "));
+    return /(Name|名称)/i.test(headerText) && /(URL|链接)/i.test(headerText) && /(Interval|间隔|Last checked|上次检查|Status|状态)/i.test(headerText);
+  }
+
+  function findSubscriptionItemForRow(row) {
+    for (const anchor of row.querySelectorAll("a[href]")) {
+      const href = normalizeUrlKey(anchor.getAttribute("href"));
+      const absoluteHref = normalizeUrlKey(anchor.href);
+      if (href && subscriptionState.byUrl.has(href)) return subscriptionState.byUrl.get(href);
+      if (absoluteHref && subscriptionState.byUrl.has(absoluteHref)) return subscriptionState.byUrl.get(absoluteHref);
+    }
+
+    const rowText = normalizeKey(row.textContent || "");
+    for (const [name, item] of subscriptionState.byName) {
+      if (name && rowText.includes(name)) return item;
+    }
+    return null;
+  }
+
+  function findSubscriptionCell(row, item) {
+    const cells = Array.from(row.querySelectorAll("td"));
+    const nameKeys = [normalizeKey(item?.name), normalizeKey(subscriptionBaseName(item?.name))].filter(Boolean);
+    for (const cell of cells) {
+      const text = normalizeKey(cell.textContent || "");
+      if (nameKeys.some((key) => text.includes(key))) return cell;
+    }
+    return cells[1] || cells[0] || null;
+  }
+
+  function createSubscriptionAvatar(item) {
+    const holder = document.createElement("span");
+    holder.className = "metube-subscription-avatar";
+    holder.setAttribute("aria-hidden", "true");
+    holder.title = "订阅头像";
+    holder.dataset.letter = (subscriptionBaseName(item?.name).charAt(0) || "频").toUpperCase();
+
+    const source = String(item?.thumbnail || "").trim();
+    if (!/^https?:\/\//i.test(source)) {
+      holder.classList.add("is-empty");
+      return holder;
+    }
+
+    const img = document.createElement("img");
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    img.alt = "";
+    img.src = source;
+    img.onerror = () => {
+      img.remove();
+      holder.classList.add("is-empty");
+    };
+    holder.appendChild(img);
+    return holder;
+  }
+
+  function enhanceSubscriptionAvatars() {
+    installThumbnailStyles();
+    if (!subscriptionState.byUrl.size && !subscriptionState.byName.size) return;
+    for (const row of document.querySelectorAll("table tbody tr")) {
+      const table = row.closest("table");
+      if (!tableLooksLikeSubscriptions(table)) continue;
+      if (row.querySelector(".metube-subscription-avatar")) continue;
+      const item = findSubscriptionItemForRow(row);
+      if (!item) continue;
+      const cell = findSubscriptionCell(row, item);
+      if (!cell) continue;
+      cell.classList.add("metube-subscription-cell");
+      cell.insertBefore(createSubscriptionAvatar(item), cell.firstChild);
     }
   }
 
@@ -1015,6 +1187,7 @@
       input.value = "";
       input.dispatchEvent(new Event("input", { bubbles: true }));
       refreshThumbnailIndex();
+      if (isSubscribe) refreshSubscriptionIndex();
     } catch (error) {
       showMaterialToast(`${isSubscribe ? "素材包订阅失败" : "素材包添加失败"}：${error.message || error}`, "error");
     } finally {
@@ -1037,6 +1210,7 @@
       translateTree(document.body);
       rewriteProjectLinks(document);
       enhanceThumbnails();
+      enhanceSubscriptionAvatars();
       applyDefaultAutoFormat();
       installMaterialBundleControls();
       installYoutubeLoginEntry();
@@ -1058,7 +1232,9 @@
 
   scheduleTranslate();
   refreshThumbnailIndex();
+  refreshSubscriptionIndex();
   setInterval(refreshThumbnailIndex, 10000);
+  setInterval(refreshSubscriptionIndex, 15000);
   setTimeout(scheduleTranslate, 300);
   setTimeout(scheduleTranslate, 800);
   setTimeout(scheduleTranslate, 1500);
