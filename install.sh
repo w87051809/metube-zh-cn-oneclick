@@ -9,7 +9,7 @@ DOWNLOAD_TEMP_DIR="${DOWNLOAD_TEMP_DIR:-$DOWNLOAD_DIR/.下载临时文件}"
 PORT="${PORT:-8081}"
 IMAGE="${IMAGE:-ghcr.io/alexta69/metube:latest}"
 RAW_BASE="${RAW_BASE:-https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/main}"
-SCRIPT_VERSION="${SCRIPT_VERSION:-20260720-3}"
+SCRIPT_VERSION="${SCRIPT_VERSION:-20260720-4}"
 DEFAULT_YTDL_OPTIONS='{"remote_components":["ejs:github"]}'
 YTDL_OPTIONS_VALUE="${YTDL_OPTIONS:-$DEFAULT_YTDL_OPTIONS}"
 
@@ -67,6 +67,7 @@ version = sys.argv[2]
 html = path.read_text(encoding="utf-8")
 
 html = html.replace('<html lang="en"', '<html lang="zh-CN"')
+html = html.replace("<title>MeTube</title>", "<title>视频下载</title>")
 html = html.replace(
     "<noscript>Please enable JavaScript to continue using this application.</noscript>",
     "<noscript>请启用 JavaScript 后继续使用这个页面。</noscript>",

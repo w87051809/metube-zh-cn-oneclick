@@ -2,8 +2,8 @@
   const PROJECT_REPO_URL = "https://github.com/w87051809/metube-zh-cn-oneclick";
 
   const translations = new Map([
-    ["MeTube", "MeTube"],
-    ["MeTube Logo", "MeTube 标志"],
+    ["MeTube", "视频下载"],
+    ["MeTube Logo", "视频下载标志"],
     ["GitHub", "GitHub"],
     ["yt-dlp", "下载内核 yt-dlp"],
     ["yt-dlp-options", "yt-dlp 参数"],
@@ -339,32 +339,37 @@
         font-size: .85rem;
       }
       .metube-youtube-login-entry {
-        max-width: 960px;
-        margin: .75rem auto 0;
+        position: fixed;
+        top: 8px;
+        right: 14px;
+        z-index: 1050;
         display: flex;
         align-items: center;
-        flex-wrap: wrap;
-        gap: 10px 12px;
-        padding: 10px 12px;
-        border: 1px solid rgba(108, 117, 125, .38);
-        border-radius: 6px;
-        background: rgba(33, 37, 41, .24);
+        flex-wrap: nowrap;
+        gap: 8px;
+        min-height: 34px;
+        max-width: calc(100vw - 190px);
+        padding: 0;
+        border: 0;
+        background: transparent;
         color: var(--bs-body-color);
-        font-size: .9rem;
+        font-size: .86rem;
       }
       .metube-youtube-login-entry strong {
         font-weight: 600;
+        white-space: nowrap;
       }
       .metube-youtube-login-entry button,
       .metube-youtube-login-entry a {
         border: 1px solid rgba(13, 110, 253, .72);
-        border-radius: 5px;
-        padding: 4px 9px;
+        border-radius: 4px;
+        padding: 3px 8px;
         background: rgba(13, 110, 253, .14);
         color: #6ea8fe;
         text-decoration: none;
-        line-height: 1.35;
+        line-height: 1.25;
         cursor: pointer;
+        white-space: nowrap;
       }
       .metube-youtube-login-entry button:hover,
       .metube-youtube-login-entry a:hover {
@@ -373,14 +378,25 @@
         text-decoration: none;
       }
       .metube-youtube-login-entry .metube-youtube-login-note {
-        color: var(--bs-secondary-color);
+        display: none;
       }
       .metube-youtube-login-entry .metube-youtube-login-status {
-        margin-left: auto;
+        margin-left: 2px;
         color: #ffc107;
+        white-space: nowrap;
       }
       .metube-youtube-login-entry .metube-youtube-login-status.is-active {
         color: #20c997;
+      }
+      @media (max-width: 900px) {
+        .metube-youtube-login-entry {
+          top: 48px;
+          right: 8px;
+          max-width: calc(100vw - 16px);
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          gap: 6px;
+        }
       }
       .metube-material-toast {
         position: fixed;
@@ -783,19 +799,15 @@
     entry.className = "metube-youtube-login-entry";
     entry.innerHTML = `
       <strong>YouTube 登录入口</strong>
-      <a href="https://www.youtube.com/" target="_blank" rel="noopener">打开 YouTube 登录</a>
-      <button type="button" data-youtube-cookie-upload>上传 cookies.txt</button>
-      <button type="button" data-youtube-cookie-status>检查状态</button>
+      <a href="https://www.youtube.com/" target="_blank" rel="noopener">打开登录</a>
+      <button type="button" data-youtube-cookie-upload>上传 Cookie</button>
+      <button type="button" data-youtube-cookie-status>检查</button>
       <span class="metube-youtube-login-note">视频提示需要登录时，用这里上传登录凭据。</span>
       <span class="metube-youtube-login-status">正在检查...</span>
       <input type="file" accept=".txt,text/plain" hidden>
     `;
 
-    const bundle = document.getElementById("metube-material-bundle");
-    const row = bundle || typeSelect.closest(".row") || typeSelect.parentElement?.parentElement || typeSelect.parentElement;
-    if (row && row.parentElement) {
-      row.insertAdjacentElement("afterend", entry);
-    }
+    document.body.appendChild(entry);
 
     const input = entry.querySelector("input[type=file]");
     entry.querySelector("[data-youtube-cookie-upload]")?.addEventListener("click", () => input?.click());
@@ -965,6 +977,7 @@
     requestAnimationFrame(() => {
       scheduled = false;
       document.documentElement.lang = "zh-CN";
+      document.title = "视频下载";
       translateTree(document.body);
       rewriteProjectLinks(document);
       enhanceThumbnails();
