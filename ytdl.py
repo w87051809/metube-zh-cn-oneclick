@@ -18,7 +18,7 @@ import signal
 import sys
 import types
 from typing import Any, Optional
-from urllib.parse import urlencode
+from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 
@@ -347,6 +347,44 @@ def _download_asset_key(url: Any, download_type: Any, format: Any, quality: Any)
     asset = f"{download_type or 'video'}:{format or 'any'}:{quality or 'best'}"
     separator = "&" if "#" in source_url else "#"
     return f"{source_url}{separator}{_METUBE_ASSET_FRAGMENT_PREFIX}{asset}"
+
+
+def _youtube_video_id_from_url(value: Any) -> str:
+    raw = str(value or "").strip()
+    if re.fullmatch(r"[A-Za-z0-9_-]{11}", raw):
+        return raw
+    try:
+        parsed = urlparse(raw)
+    except ValueError:
+        return ""
+
+    host = parsed.netloc.lower().removeprefix("www.")
+    if host == "youtu.be":
+        candidate = parsed.path.strip("/").split("/")[0]
+        return candidate if re.fullmatch(r"[A-Za-z0-9_-]{11}", candidate or "") else ""
+    if not host.endswith("youtube.com"):
+        return ""
+
+    query_id = parse_qs(parsed.query).get("v", [""])[0]
+    if re.fullmatch(r"[A-Za-z0-9_-]{11}", query_id or ""):
+        return query_id
+
+    parts = [part for part in parsed.path.split("/") if part]
+    for marker in ("shorts", "embed", "live"):
+        if marker in parts:
+            index = parts.index(marker)
+            candidate = parts[index + 1] if index + 1 < len(parts) else ""
+            return candidate if re.fullmatch(r"[A-Za-z0-9_-]{11}", candidate or "") else ""
+    return ""
+
+
+def _is_youtube_url(value: Any) -> bool:
+    try:
+        parsed = urlparse(str(value or "").strip())
+    except ValueError:
+        return False
+    host = parsed.netloc.lower().removeprefix("www.")
+    return host == "youtu.be" or host.endswith("youtube.com")
 
 
 # Regex matching yt-dlp output-template field references, e.g. ``%(title)s``
@@ -841,6 +879,80 @@ class Download:
                 return real_candidate
         return None
 
+    def _thumbnail_output_target(self):
+        entry = getattr(self.info, "entry", None)
+        info_dict = dict(entry) if isinstance(entry, dict) else {}
+        info_dict.setdefault("id", getattr(self.info, "id", ""))
+        info_dict.setdefault("title", getattr(self.info, "filename_title", None) or getattr(self.info, "title", ""))
+        info_dict["ext"] = "jpg"
+        params = {
+            "quiet": True,
+            "paths": {"home": self.download_dir, "temp": self.temp_dir},
+            "outtmpl": {"default": self.output_template},
+        }
+        with yt_dlp.YoutubeDL(params=params) as ydl:
+            target = ydl.prepare_filename(info_dict)
+
+        real_download_dir = os.path.realpath(self.download_dir)
+        real_target = os.path.realpath(target)
+        if not _is_within_directory(real_download_dir, real_target):
+            log.warning("Refusing thumbnail output outside download directory: %s", target)
+            return None
+        return target
+
+    def _download_preferred_youtube_thumbnail(self, download_url):
+        if getattr(self.info, "download_type", "") != "thumbnail":
+            return False
+
+        entry = getattr(self.info, "entry", None)
+        entry = entry if isinstance(entry, dict) else {}
+        source_url = getattr(self.info, "source_url", "")
+        source_is_youtube = any(_is_youtube_url(value) for value in (entry.get("webpage_url"), download_url, source_url))
+        video_id = (
+            _youtube_video_id_from_url(entry.get("webpage_url"))
+            or _youtube_video_id_from_url(download_url)
+            or _youtube_video_id_from_url(source_url)
+            or (_youtube_video_id_from_url(entry.get("id")) if source_is_youtube else "")
+        )
+        if not video_id:
+            return False
+
+        target = self._thumbnail_output_target()
+        if not target:
+            return False
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+
+        urls = [
+            f"https://i.ytimg.com/vi/{video_id}/hq720.jpg",
+            f"https://i.ytimg.com/vi/{video_id}/maxresdefault.jpg",
+            f"https://i.ytimg.com/vi/{video_id}/sddefault.jpg",
+            f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg",
+        ]
+        tmp = f"{target}.part"
+        for thumb_url in urls:
+            try:
+                request = Request(thumb_url, headers={"User-Agent": "Mozilla/5.0"})
+                with urlopen(request, timeout=30) as response:
+                    content_type = response.headers.get("Content-Type", "")
+                    payload = response.read()
+                if not content_type.lower().startswith("image/") or len(payload) < 1024:
+                    continue
+                with open(tmp, "wb") as outfile:
+                    outfile.write(payload)
+                os.replace(tmp, target)
+                self.status_queue.put({"status": "finished", "filename": target})
+                log.info("Downloaded preferred YouTube thumbnail for %s from %s", self.info.title, thumb_url)
+                return True
+            except (HTTPError, URLError, TimeoutError, OSError) as exc:
+                log.debug("Preferred YouTube thumbnail failed for %s: %s", thumb_url, exc)
+            finally:
+                if os.path.exists(tmp):
+                    try:
+                        os.remove(tmp)
+                    except OSError:
+                        pass
+        return False
+
     def _download(self):
         # Run in our own process group so cancel() can SIGKILL the whole
         # group (yt-dlp + any ffmpeg children it spawned for merge/postproc),
@@ -855,6 +967,11 @@ class Download:
         try:
             debug_logging = logging.getLogger().isEnabledFor(logging.DEBUG)
             put_status = self._make_progress_hook()
+
+            if self._download_preferred_youtube_thumbnail(download_url):
+                self.status_queue.put({'status': 'finished'})
+                log.info(f"Finished download for: {self.info.title}")
+                return
 
             def put_status_postprocessor(d):
                 if d['postprocessor'] == 'MoveFiles' and d['status'] == 'finished':
