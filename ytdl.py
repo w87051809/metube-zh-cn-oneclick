@@ -818,6 +818,29 @@ class Download:
             return final_candidate
         return path
 
+    def _find_thumbnail_output_path(self, path):
+        if not path:
+            return None
+        preferred = self._prefer_final_download_path(path)
+        root, ext = os.path.splitext(preferred)
+        image_exts = (".jpg", ".jpeg", ".webp", ".png")
+        candidates = []
+        if ext.lower() in image_exts:
+            candidates.append(preferred)
+        candidates.extend(root + image_ext for image_ext in image_exts)
+
+        basename_root = os.path.splitext(os.path.basename(preferred))[0]
+        candidates.extend(os.path.join(self.download_dir, basename_root + image_ext) for image_ext in image_exts)
+
+        real_download_dir = os.path.realpath(self.download_dir)
+        for candidate in dict.fromkeys(candidates):
+            real_candidate = os.path.realpath(candidate)
+            if not _is_within_directory(real_download_dir, real_candidate):
+                continue
+            if os.path.isfile(real_candidate):
+                return real_candidate
+        return None
+
     def _download(self):
         # Run in our own process group so cancel() can SIGKILL the whole
         # group (yt-dlp + any ffmpeg children it spawned for merge/postproc),
@@ -875,6 +898,8 @@ class Download:
                 'postprocessor_hooks': [put_status_postprocessor],
                 **self.ytdl_opts,
             }
+            if getattr(self.info, 'download_type', '') in ('captions', 'thumbnail'):
+                ytdl_params.pop('format', None)
 
             # Add chapter splitting options if enabled
             if self.info.split_by_chapters:
@@ -988,6 +1013,15 @@ class Download:
             if 'filename' in status:
                 fileName = self._prefer_final_download_path(status.get('filename'))
                 rel_name = os.path.relpath(fileName, self.download_dir)
+                if getattr(self.info, 'download_type', '') == 'thumbnail':
+                    thumbnail_path = self._find_thumbnail_output_path(fileName)
+                    if thumbnail_path:
+                        self.info.filename = os.path.relpath(thumbnail_path, self.download_dir)
+                        self.info.size = os.path.getsize(thumbnail_path)
+                    else:
+                        self.info.filename = os.path.splitext(rel_name)[0] + '.jpg'
+                        self.info.size = None
+                    continue
                 # For captions mode, ignore media-like placeholders and let subtitle_file
                 # statuses define the final file shown in the UI.
                 if getattr(self.info, 'download_type', '') == 'captions':
@@ -997,11 +1031,6 @@ class Download:
                         continue
                 self.info.filename = rel_name
                 self.info.size = os.path.getsize(fileName) if os.path.exists(fileName) else None
-                if getattr(self.info, 'download_type', '') == 'thumbnail':
-                    # The thumbnail convertor always emits a .jpg, but yt-dlp may
-                    # report the pre-conversion media/thumbnail extension
-                    # (.webm/.mp4/.png/.webp/...). Normalise to .jpg regardless.
-                    self.info.filename = os.path.splitext(self.info.filename)[0] + '.jpg'
 
             # Handle chapter files
             log.debug(f"Update status for {self.info.title}: {status}")
@@ -1191,6 +1220,7 @@ class DownloadQueue:
             thread_name_prefix="dl",
         )
         self.done.load()
+        self._repair_completed_thumbnail_sizes()
         self._add_generation = 0
         self._canceled_urls = set()  # URLs canceled during current playlist add
         self._scheduled_probe_at: dict[str, float] = {}
@@ -1475,6 +1505,34 @@ class DownloadQueue:
         else:
             dldirectory = base_directory
         return dldirectory, None
+
+    def _repair_completed_thumbnail_sizes(self) -> None:
+        changed = False
+        for _key, download in list(self.done.items()):
+            info = download.info
+            if getattr(info, 'download_type', '') != 'thumbnail':
+                continue
+            filename = getattr(info, 'filename', None)
+            if not filename:
+                continue
+            dldirectory, calc_error = self.__calc_download_path(
+                getattr(info, 'download_type', ''),
+                getattr(info, 'folder', ''),
+            )
+            if calc_error is not None or not dldirectory:
+                continue
+            real_base_directory = os.path.realpath(dldirectory)
+            candidate = os.path.realpath(os.path.join(dldirectory, filename))
+            if not _is_within_directory(real_base_directory, candidate):
+                continue
+            if not os.path.isfile(candidate):
+                continue
+            actual_size = os.path.getsize(candidate)
+            if getattr(info, 'size', None) != actual_size:
+                info.size = actual_size
+                changed = True
+        if changed:
+            self.done._save_dict()
 
     async def __add_download(self, dl, auto_start):
         dldirectory, error_message = self.__calc_download_path(dl.download_type, dl.folder)

@@ -65,10 +65,10 @@ def get_format(download_type: str, codec: str, format: str, quality: str) -> str
         return format[7:]
 
     if download_type == "thumbnail":
-        return "bestaudio/best"
+        return "best"
 
     if download_type == "captions":
-        return "bestaudio/best"
+        return "best"
 
     if download_type == "audio":
         if format not in AUDIO_FORMATS:
