@@ -38,7 +38,8 @@
 3. 运行语法检查：
    - `bash -n install.sh`
    - `node --check metube-zh-cn.js`
-   - `python -m py_compile ytdl.py subscriptions.py dl_formats.py`
+   - `python -m py_compile ytdl.py subscriptions.py dl_formats.py download_retry.py ai_api.py patch_main.py`
+   - `python -m unittest discover -s tests -v`
 4. 扫描敏感信息：
    - 服务器地址
    - 密码
@@ -53,6 +54,7 @@
    - 用户是否需要重装或刷新
    - 验证结果
    - 回滚办法
+8. 确认 `output/`、部署记录、截图和服务器临时文件没有进入暂存区。
 
 ## 正式发布步骤
 

@@ -9,7 +9,7 @@ DOWNLOAD_TEMP_DIR="${DOWNLOAD_TEMP_DIR:-$DOWNLOAD_DIR/.下载临时文件}"
 PORT="${PORT:-8081}"
 IMAGE="${IMAGE:-ghcr.io/alexta69/metube:latest}"
 RAW_BASE="${RAW_BASE:-https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/main}"
-SCRIPT_VERSION="${SCRIPT_VERSION:-20260726-1}"
+SCRIPT_VERSION="${SCRIPT_VERSION:-20260821-2}"
 DEFAULT_YTDL_OPTIONS='{"remote_components":["ejs:github"]}'
 YTDL_OPTIONS_VALUE="${YTDL_OPTIONS:-$DEFAULT_YTDL_OPTIONS}"
 
@@ -44,19 +44,24 @@ echo "下载后端素材包补丁..."
 curl -fsSL "$RAW_BASE/ytdl.py" -o "$CUSTOM_DIR/ytdl.py"
 curl -fsSL "$RAW_BASE/subscriptions.py" -o "$CUSTOM_DIR/subscriptions.py"
 curl -fsSL "$RAW_BASE/dl_formats.py" -o "$CUSTOM_DIR/dl_formats.py"
+curl -fsSL "$RAW_BASE/download_retry.py" -o "$CUSTOM_DIR/download_retry.py"
+curl -fsSL "$RAW_BASE/ai_api.py" -o "$CUSTOM_DIR/ai_api.py"
+curl -fsSL "$RAW_BASE/patch_main.py" -o "$CUSTOM_DIR/patch_main.py"
 
 echo "拉取 MeTube 镜像..."
 docker pull "$IMAGE"
 
 TMP_CONTAINER="metube-index-source-$$"
 cleanup() {
-  docker rm -f "$TMP_CONTAINER" >/dev/null 2>&1 || true
+  docker rm "$TMP_CONTAINER" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
 echo "生成中文入口页面..."
 docker create --name "$TMP_CONTAINER" "$IMAGE" >/dev/null
 docker cp "$TMP_CONTAINER:/app/ui/dist/metube/browser/index.html" "$CUSTOM_DIR/index.html"
+docker cp "$TMP_CONTAINER:/app/app/main.py" "$CUSTOM_DIR/main.py"
+python3 "$CUSTOM_DIR/patch_main.py" "$CUSTOM_DIR/main.py"
 
 python3 - "$CUSTOM_DIR/index.html" "$SCRIPT_VERSION" <<'PY'
 from pathlib import Path
@@ -95,6 +100,9 @@ services:
       - $CUSTOM_DIR/index.html:/app/ui/dist/metube/browser/index.html:ro
       - $CUSTOM_DIR/metube-zh-cn.js:/app/ui/dist/metube/browser/metube-zh-cn.js:ro
       - $CUSTOM_DIR/dl_formats.py:/app/app/dl_formats.py:ro
+      - $CUSTOM_DIR/download_retry.py:/app/app/download_retry.py:ro
+      - $CUSTOM_DIR/ai_api.py:/app/app/ai_api.py:ro
+      - $CUSTOM_DIR/main.py:/app/app/main.py:ro
       - $CUSTOM_DIR/ytdl.py:/app/app/ytdl.py:ro
       - $CUSTOM_DIR/subscriptions.py:/app/app/subscriptions.py:ro
     environment:
@@ -104,9 +112,10 @@ services:
       - SUBSCRIPTION_DEFAULT_CHECK_INTERVAL=5
       - SUBSCRIPTION_SCAN_PLAYLIST_END=50
       - DEFAULT_OPTION_PLAYLIST_ITEM_LIMIT=1
-      - MAX_CONCURRENT_DOWNLOADS=3
+      - MAX_CONCURRENT_DOWNLOADS=2
       - DELETE_FILE_ON_TRASHCAN=true
       - DEFAULT_THEME=auto
+      - YTDL_NIGHTLY_UPDATE_TIME=${YTDL_NIGHTLY_UPDATE_TIME:-04:15}
       - YTDL_OPTIONS=$YTDL_OPTIONS_VALUE
       - TITLE_TRANSLATE_ENABLED=${TITLE_TRANSLATE_ENABLED:-true}
       - TITLE_TRANSLATE_TARGET_LANG=${TITLE_TRANSLATE_TARGET_LANG:-zh-CN}

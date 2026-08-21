@@ -25,6 +25,9 @@ CODEC_FILTER_MAP = {
     'vp9':  "[vcodec~='^vp0?9']",
 }
 
+NON_AV1_FILTER = "[vcodec!~='^av0?1']"
+COMBINED_MEDIA_FILTER = "[vcodec!=none][acodec!=none]"
+
 
 def _normalize_caption_mode(mode: str) -> str:
     mode = (mode or "").strip()
@@ -34,6 +37,19 @@ def _normalize_caption_mode(mode: str) -> str:
 def _normalize_subtitle_language(language: str) -> str:
     language = (language or "").strip()
     return language or "en"
+
+
+def get_compatibility_format(format: str, quality: str) -> str:
+    """Return a last-resort selector that prefers one file with video+audio."""
+    format = (format or "any").strip().lower()
+    quality = (quality or "best").strip().lower()
+    quality_filter = f"[height<={quality}]" if quality not in ("best", "worst") else ""
+    combined = f"best{COMBINED_MEDIA_FILTER}"
+    if format in ("mp4", "ios"):
+        return f"{combined}{quality_filter}[ext=mp4]/{combined}{quality_filter}/best"
+    if quality_filter:
+        return f"{combined}{quality_filter}/best{quality_filter}/best"
+    return f"{combined}/best"
 
 
 def get_format(download_type: str, codec: str, format: str, quality: str) -> str:
@@ -94,7 +110,15 @@ def get_format(download_type: str, codec: str, format: str, quality: str) -> str
             return f"bestvideo{codec_filter}{vcombo}+bestaudio{afmt}/bestvideo{vcombo}+bestaudio{afmt}/best{vcombo}/{fallback}"
         if format == "mp4":
             return f"bestvideo{vcombo}+bestaudio{afmt}/best{vcombo}/{fallback}"
-        return f"bestvideo{vcombo}+bestaudio{afmt}/best{vcombo}"
+        # YouTube occasionally serves a complete AV1 file containing malformed
+        # packets. yt-dlp accepts the download, but ffmpeg then fails halfway
+        # through the WebM merge. Automatic mode keeps the best available
+        # quality while preferring VP9/H.264, with AV1 retained as a last resort.
+        return (
+            f"bestvideo{NON_AV1_FILTER}{vres}+bestaudio/"
+            f"best{COMBINED_MEDIA_FILTER}{NON_AV1_FILTER}{vres}/"
+            f"bestvideo{vcombo}+bestaudio{afmt}/best{vcombo}"
+        )
 
     raise ValueError(f"Unknown download_type {download_type}")
 

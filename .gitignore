@@ -1,5 +1,7 @@
 .env
 .env.*
+cookies.txt
+*.cookies.txt
 *.key
 *.pem
 *.p12
@@ -10,6 +12,7 @@ id_rsa*
 metube-index.html
 metube-main-*.js
 .playwright-cli/
+output/
 node_modules/
 __pycache__/
 dist/
