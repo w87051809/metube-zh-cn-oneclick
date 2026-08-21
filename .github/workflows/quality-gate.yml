@@ -26,12 +26,18 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install test dependencies
+        run: python -m pip install aiohttp
+
       - name: Syntax checks
         run: |
           set -euo pipefail
           bash -n install.sh
           node --check metube-zh-cn.js
-          python -m py_compile ytdl.py subscriptions.py dl_formats.py
+          python -m py_compile ytdl.py subscriptions.py dl_formats.py download_retry.py ai_api.py patch_main.py
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
 
       - name: Secret and local address scan
         run: |

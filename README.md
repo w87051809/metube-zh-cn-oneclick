@@ -1,24 +1,69 @@
-# MeTube 中文一键安装版
+# 视频下载（MeTube 中文增强版）
 
-这是一个给 [MeTube](https://github.com/alexta69/metube) 做的中文覆盖和一键安装脚本。
+[![许可证](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+[![质量检查](https://github.com/w87051809/metube-zh-cn-oneclick/actions/workflows/quality-gate.yml/badge.svg)](https://github.com/w87051809/metube-zh-cn-oneclick/actions/workflows/quality-gate.yml)
 
-它不会重新打包 MeTube 镜像，只是使用官方 Docker 镜像 `ghcr.io/alexta69/metube:latest`，再挂载中文前端覆盖脚本和一个很小的后端补丁。
+这是一个基于 [MeTube](https://github.com/alexta69/metube) 的中文增强和一键安装项目。
+
+项目继续使用官方镜像 `ghcr.io/alexta69/metube:latest`，通过只读挂载加入中文界面、订阅增强、素材包、自动修复和 AI 助手，不重新打包、不冒充上游官方版本。
+
+## 核心功能
+
+### 下载与素材包
+
+- 视频格式默认设为“自动”，优先保证成功率和最佳可用画质，不强制 MP4。
+- 一次下载可以同时建立视频、SRT 字幕和 JPG 封面任务，不单独下载音频。
+- 已完成列表显示“视频 / 字幕 / 封面”标签，避免把同名字幕误认为视频已经成功。
+- 下载前尽量把英文标题翻译成简体中文；翻译失败时保留原标题继续下载。
+- 视频、字幕、封面和临时文件都保存在配置的下载目录中。
+- 在网页已完成列表点垃圾桶时，可以同步删除对应硬盘文件。
+
+### 订阅
+
+- 支持频道和播放列表订阅。
+- 订阅任务同样可以自动建立视频、字幕和封面任务。
+- 默认每 5 分钟检查一次更新。
+- 新建订阅只补下最近 24 小时发布的视频；更早的视频会标记为已见，不会一次下载整个频道历史。
+- 订阅列表显示频道头像，方便快速识别作者。
+
+### YouTube 自动修复
+
+遇到 403、连接超时、临时网络异常或媒体地址过期时，下载器按固定规则自动处理：
+
+1. 等待本机 PO Token 服务就绪。
+2. 使用默认最佳线路下载。
+3. 重新解析视频，刷新带时效的媒体地址。
+4. 切换到 `mweb` 播放器线路并优先使用 IPv4。
+5. 切换到匿名 `android_vr` 兼容线路。
+6. 最后回退到带音视频的兼容合并格式。
+
+自动修复不依赖 AI。详细说明见 [YouTube 自动修复机制](docs/automatic-recovery.md)。
+
+### 中文界面和 AI 助手
+
+- 品牌名称、按钮、状态、错误详情和操作说明均做中文覆盖。
+- 顶部提供 `YouTube 登录入口`，可以上传 Netscape 格式的 `cookies.txt`。
+- 顶部提供 `AI 助手`，用于解释失败原因、当前任务和自动修复顺序。
+- AI 只负责解释和辅助判断；真正的格式、线路和重试切换由下载器按固定规则执行。
+- API Key 只保存在服务器端，不会返回给浏览器。
+
+AI 是可选功能。没有配置 AI 时，下载、订阅和自动修复仍然可以正常使用。详细说明见 [AI 助手配置与隐私](docs/ai-assistant.md)。
 
 ## 一键安装
 
-在 Ubuntu / Debian 服务器上执行：
+适用于已经安装 Docker 和 Docker Compose 的 Ubuntu / Debian 服务器：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/main/install.sh | sudo bash
 ```
 
-安装后访问：
+安装完成后访问：
 
 ```text
-http://服务器IP:8081/
+http://服务器地址:8081/
 ```
 
-默认视频保存目录：
+默认下载目录：
 
 ```text
 /mnt/2TB/优兔视频
@@ -26,69 +71,77 @@ http://服务器IP:8081/
 
 ## 自定义安装
 
-可以改端口和下载目录：
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/main/install.sh | sudo env PORT=8081 DOWNLOAD_DIR='/mnt/2TB/优兔视频' bash
-```
-
-也可以先下载脚本再执行：
+修改端口和下载目录：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/main/install.sh -o install.sh
-sudo PORT=8081 DOWNLOAD_DIR='/mnt/2TB/优兔视频' bash install.sh
+sudo env PORT=8081 DOWNLOAD_DIR='/你的/视频目录' bash install.sh
 ```
 
-## 已包含功能
+常用安装变量：
 
-- 中文界面覆盖
-- 中文错误提示和详情说明
-- 默认视频格式是自动，让 yt-dlp 自己选最稳的格式
-- 素材包默认全选：一次点下载，同时添加自动视频、SRT 字幕、JPG 封面图
-- 点“订阅”也是素材包：以后频道有新视频，会自动排队下载自动视频、SRT 字幕、JPG 封面图
-- 不会单独下载音频
-- 下载前会把英文标题翻译成中文，网页标题和硬盘文件名都会保存成中文；翻译失败时保留原标题继续下载
-- 页面有明显的 `YouTube 登录入口`，遇到“需要登录确认”时可以上传 `cookies.txt`
-- 默认启用 yt-dlp 的 YouTube 新校验求解组件，减少“只拿到封面、没有视频格式”的情况
-- 订阅默认每 5 分钟检查一次
-- 新订阅会补下 24 小时内刚发布的视频；更早的历史视频会记为已见过，不会一次拉一堆老视频
-- 下载临时文件也放在视频目录里的 `.下载临时文件`，不会跑到网站目录外面
-- 已完成列表点垃圾桶时，同时删除硬盘里的视频文件
-- 视频标题前显示很小的 YouTube 封面，不额外加新列
-- 后端补丁允许同一个视频地址、同一个订阅地址同时排队视频、字幕、封面，不会互相覆盖
-- 独立状态目录，避免订阅记录和视频文件混在一起
+| 变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `PORT` | `8081` | 网页端口 |
+| `DOWNLOAD_DIR` | `/mnt/2TB/优兔视频` | 视频、字幕、封面保存目录 |
+| `STATE_DIR` | `/www/metube/state` | 下载历史、订阅和 Cookie 状态目录 |
+| `TITLE_TRANSLATE_ENABLED` | `true` | 是否翻译英文标题 |
+| `TITLE_TRANSLATE_TARGET_LANG` | `zh-CN` | 标题目标语言 |
+| `TITLE_TRANSLATE_API_BASE` | 空 | OpenAI 兼容接口地址 |
+| `TITLE_TRANSLATE_API_KEY` | 空 | AI 接口密钥，只能配置在私有服务器上 |
+| `TITLE_TRANSLATE_MODEL` | `gpt-5.5` | AI 模型名称 |
+| `YTDL_NIGHTLY_UPDATE_TIME` | `04:15` | 每日更新 yt-dlp nightly 的时间 |
 
-## 重要提醒
+不要把真实服务器地址、Cookie、SSH Key、密码或 API Key 写进仓库、Issue、截图和 Release Notes。
 
-`DELETE_FILE_ON_TRASHCAN=true` 已开启。
+## 更新现有安装
 
-意思是：在网页“已完成”列表里点删除，会同时删除服务器硬盘里的对应视频文件。
+重新运行安装命令即可同步最新版覆盖文件，并保留下载目录和状态目录：
 
-如果你只想删网页记录，不想删硬盘文件，请编辑：
-
-```text
-/www/metube/docker-compose.yml
+```bash
+curl -fsSL https://raw.githubusercontent.com/w87051809/metube-zh-cn-oneclick/main/install.sh | sudo bash
 ```
 
-把：
+更新后建议浏览器执行一次强制刷新：
+
+- Windows / Linux：`Ctrl + F5`
+- macOS：`Command + Shift + R`
+
+## YouTube 登录 Cookie
+
+只有 YouTube 明确提示需要登录、年龄确认或权限验证时才需要 Cookie。
+
+1. 在自己的浏览器登录 YouTube。
+2. 导出 Netscape 格式的 `cookies.txt`。
+3. 打开网页右上角 `YouTube 登录入口`。
+4. 上传文件并点击 `检查状态`。
+
+Cookie 会保存在服务器状态目录，不应该提交到 Git。账号退出登录、修改密码或 Cookie 过期后，需要重新导出。
+
+## 删除文件行为
+
+安装脚本默认启用：
 
 ```yaml
 - DELETE_FILE_ON_TRASHCAN=true
 ```
 
-改成：
+因此，在网页“已完成”列表点击删除，会同时删除硬盘上的对应文件。
+
+如果只想删除网页记录，请把 `/www/metube/docker-compose.yml` 中的值改成：
 
 ```yaml
 - DELETE_FILE_ON_TRASHCAN=false
 ```
 
-然后执行：
+然后应用配置：
 
 ```bash
-cd /www/metube && docker compose up -d
+cd /www/metube
+docker compose up -d
 ```
 
-## 常用命令
+## 常用维护命令
 
 查看状态：
 
@@ -96,19 +149,19 @@ cd /www/metube && docker compose up -d
 cd /www/metube && docker compose ps
 ```
 
-看日志：
+查看日志：
 
 ```bash
 cd /www/metube && docker compose logs -f
 ```
 
-重启：
+重启服务：
 
 ```bash
 cd /www/metube && docker compose restart
 ```
 
-更新 MeTube 镜像：
+更新官方 MeTube 镜像：
 
 ```bash
 cd /www/metube
@@ -116,30 +169,47 @@ docker compose pull
 docker compose up -d
 ```
 
-## 发布与质量
+## 故障判断
 
-本仓库以后按正式发布流程维护：
+| 页面提示 | 常见原因 | 系统处理 |
+| --- | --- | --- |
+| `HTTP Error 403` | YouTube 临时授权、客户端或线路变化 | 自动刷新地址并切换客户端 |
+| `Connection timed out` | CDN 节点连接超时 | 自动重试并重新解析媒体地址 |
+| `Postprocessing: Conversion failed` | 音视频组合或编码兼容问题 | 自动模式改选其他可用格式 |
+| `No video formats found` | Cookie、PO Token 或客户端受限 | 尝试兼容客户端；必要时上传 Cookie |
+| `AI 密钥无效` | AI 服务认证失败 | 只影响 AI 解释，不影响下载 |
+| `AI 服务连接超时` | 外部 AI 服务暂时不可用 | 只影响 AI 解释，不影响下载 |
+
+## 项目结构
+
+| 文件 | 作用 |
+| --- | --- |
+| `install.sh` | 一键安装、生成 Compose 配置并挂载增强文件 |
+| `metube-zh-cn.js` | 中文界面、主题、封面、任务标签和 AI 入口 |
+| `ytdl.py` | 下载、中文标题和素材任务增强 |
+| `download_retry.py` | 网络重试和 YouTube 客户端回退链 |
+| `dl_formats.py` | 自动格式与兼容格式选择 |
+| `subscriptions.py` | 订阅更新、最近视频补下和频道头像 |
+| `ai_api.py` | 服务器端 AI 状态和对话接口 |
+| `patch_main.py` | 在官方后端入口注册 AI 路由 |
+| `tests/` | 自动格式、重试、AI 和接口兼容测试 |
+
+## 发布与质量
 
 - 变更日志：[CHANGELOG.md](CHANGELOG.md)
 - 发布流程：[docs/release-process.md](docs/release-process.md)
-- 安全提醒：[SECURITY.md](SECURITY.md)
+- 安全说明：[SECURITY.md](SECURITY.md)
+- 当前发行说明：[docs/releases/v1.2.0.md](docs/releases/v1.2.0.md)
 
-正式 Release 会写清变更、验证结果、升级说明和回滚办法。普通文档小修先进 `Unreleased`，不再连续发一堆小版本。
+GitHub Actions 会检查脚本语法、Python 语法、JavaScript 语法、自动化测试和常见敏感信息。
 
-## 原始作者
+## 上游作者与致谢
 
-- 原始项目：MeTube
+- 原始项目：[alexta69/metube](https://github.com/alexta69/metube)
 - 原始作者：[alexta69](https://github.com/alexta69)
-- 原始仓库：[alexta69/metube](https://github.com/alexta69/metube)
 
-## 感谢
-
-感谢 MeTube 原始作者 [alexta69](https://github.com/alexta69) 和 [alexta69/metube](https://github.com/alexta69/metube) 的所有贡献者。
-
-MeTube 是一个非常好用的自托管视频下载 Web UI，基于 `yt-dlp`，支持视频、音频、字幕、封面下载，也支持订阅频道和播放列表自动检查更新。
-
-本仓库只是中文覆盖和安装脚本，不是 MeTube 官方项目。
+感谢 MeTube 原作者和所有贡献者。本仓库是社区维护的中文增强版本，不是 MeTube 官方项目。
 
 ## 许可证
 
-为了和上游 MeTube 的许可证保持一致，本仓库使用 AGPL-3.0。
+本仓库使用 [AGPL-3.0](LICENSE)，与上游 MeTube 保持一致。

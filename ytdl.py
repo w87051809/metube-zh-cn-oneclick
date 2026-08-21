@@ -26,11 +26,18 @@ import yt_dlp.networking.impersonate
 from yt_dlp.postprocessor.common import PostProcessor
 from yt_dlp.utils import STR_FORMAT_RE_TMPL, STR_FORMAT_TYPES
 import bg_tasks
-from dl_formats import get_format, get_opts, AUDIO_FORMATS, merge_ytdl_option_layers
+from dl_formats import get_compatibility_format, get_format, get_opts, AUDIO_FORMATS, merge_ytdl_option_layers
 from datetime import datetime
 from state_store import AtomicJsonStore, from_json_compatible, read_legacy_shelf, to_json_compatible
 from subscriptions import _entry_id
 from url_guard import validate_url
+from download_retry import (
+    apply_download_attempt,
+    build_media_download_attempts,
+    retry_download_attempts,
+    retry_recoverable_download,
+    wait_for_http_ready,
+)
 
 log = logging.getLogger('ytdl')
 
@@ -1009,7 +1016,12 @@ class Download:
                 'paths': {"home": self.download_dir, "temp": self.temp_dir},
                 'outtmpl': { "default": self.output_template, "chapter": self.output_template_chapter },
                 'format': self.format,
-                'socket_timeout': 30,
+                'socket_timeout': 45,
+                'retries': 10,
+                'fragment_retries': 10,
+                'extractor_retries': 3,
+                'file_access_retries': 3,
+                'sleep_interval_requests': 1,
                 'ignore_no_formats_error': True,
                 'progress_hooks': [put_status],
                 'postprocessor_hooks': [put_status_postprocessor],
@@ -1042,7 +1054,79 @@ class Download:
                     [(start, end)],
                 )
 
-            ret = self._make_youtube_dl(ytdl_params).download([download_url])
+            download_type = getattr(self.info, 'download_type', '')
+            use_youtube_media_recovery = (
+                download_type in ('video', 'audio') and _is_youtube_url(download_url)
+            )
+
+            if use_youtube_media_recovery:
+                pot_ready = wait_for_http_ready("http://127.0.0.1:4416/ping", timeout=20)
+                if not pot_ready:
+                    log.warning(
+                        "YouTube PO Token provider was not ready within 20 seconds; "
+                        "continuing with automatic client fallbacks for %s",
+                        self.info.title,
+                    )
+
+                compatibility_format = (
+                    get_compatibility_format(
+                        getattr(self.info, 'format', 'any'),
+                        getattr(self.info, 'quality', 'best'),
+                    )
+                    if download_type == 'video'
+                    else None
+                )
+                attempts = build_media_download_attempts(
+                    download_type,
+                    self.format,
+                    compatibility_format,
+                )
+
+                def download_attempt(attempt, attempt_number):
+                    params = apply_download_attempt(ytdl_params, attempt)
+                    if attempt_number > 1:
+                        self.status_queue.put({
+                            'status': 'preparing',
+                            'msg': f'自动修复中：{attempt.label}（{attempt_number}/{len(attempts)}）',
+                        })
+                    return self._make_youtube_dl(params).download([download_url])
+
+                def log_fallback(exc, failed_attempt, next_attempt, attempt_number, total):
+                    log.warning(
+                        "Recoverable YouTube media error for %s on %s (attempt %d/%d); "
+                        "next strategy is %s after %.0f seconds: %s",
+                        self.info.title,
+                        failed_attempt.key,
+                        attempt_number,
+                        total,
+                        next_attempt.key,
+                        next_attempt.delay,
+                        exc,
+                    )
+
+                ret = retry_download_attempts(
+                    download_attempt,
+                    attempts,
+                    on_retry=log_fallback,
+                )
+            else:
+                def download_once():
+                    # A new YoutubeDL instance performs fresh extraction while
+                    # preserving resumable partial files.
+                    return self._make_youtube_dl(copy.deepcopy(ytdl_params)).download([download_url])
+
+                def log_retry(exc, attempt, max_attempts, delay):
+                    log.warning(
+                        "Recoverable download network error for %s (attempt %d/%d); "
+                        "re-extracting the media URL in %.0f seconds: %s",
+                        self.info.title,
+                        attempt,
+                        max_attempts,
+                        delay,
+                        exc,
+                    )
+
+                ret = retry_recoverable_download(download_once, on_retry=log_retry)
             self.status_queue.put({'status': 'finished' if ret == 0 else 'error'})
             log.info(f"Finished download for: {self.info.title}")
         except yt_dlp.utils.YoutubeDLError as exc:
@@ -1886,13 +1970,16 @@ class DownloadQueue:
         clip_end=None,
         already=None,
         _add_gen=None,
+        retry_entry=None,
+        sponsorblock=False,
     ):
         if ytdl_options_presets is None:
             ytdl_options_presets = []
         log.info(
             f'adding {url}: {download_type=} {codec=} {format=} {quality=} {already=} {folder=} {custom_name_prefix=} '
             f'{playlist_item_limit=} {auto_start=} {split_by_chapters=} {chapter_template=} '
-            f'{subtitle_language=} {subtitle_mode=} {ytdl_options_presets=} {clip_start=} {clip_end=}'
+            f'{subtitle_language=} {subtitle_mode=} {ytdl_options_presets=} {clip_start=} {clip_end=} '
+            f'{sponsorblock=}'
         )
         if already is None:
             _add_gen = self._add_generation

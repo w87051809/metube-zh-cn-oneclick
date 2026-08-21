@@ -443,6 +443,42 @@
         color: var(--bs-secondary-color);
         font-size: .85rem;
       }
+      .metube-asset-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 42px;
+        height: 22px;
+        margin: 0 7px 0 2px;
+        padding: 0 7px;
+        border: 1px solid rgba(100, 116, 139, .28);
+        border-radius: 999px;
+        background: rgba(100, 116, 139, .1);
+        color: var(--bs-secondary-color);
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1;
+        vertical-align: middle;
+        white-space: nowrap;
+      }
+      .metube-asset-badge[data-asset-type="video"] {
+        border-color: rgba(37, 99, 235, .3);
+        background: rgba(37, 99, 235, .11);
+        color: #2563eb;
+      }
+      .metube-asset-badge[data-asset-type="captions"] {
+        border-color: rgba(15, 118, 110, .3);
+        background: rgba(15, 118, 110, .11);
+        color: #0f766e;
+      }
+      .metube-asset-badge[data-asset-type="thumbnail"] {
+        border-color: rgba(180, 83, 9, .3);
+        background: rgba(180, 83, 9, .11);
+        color: #b45309;
+      }
+      [data-bs-theme="dark"] .metube-asset-badge[data-asset-type="video"] { color: #93c5fd; }
+      [data-bs-theme="dark"] .metube-asset-badge[data-asset-type="captions"] { color: #5eead4; }
+      [data-bs-theme="dark"] .metube-asset-badge[data-asset-type="thumbnail"] { color: #fcd34d; }
       .metube-youtube-login-entry {
         position: fixed;
         top: 8px;
@@ -493,6 +529,146 @@
       .metube-youtube-login-entry .metube-youtube-login-status.is-active {
         color: #20c997;
       }
+      .metube-ai-open {
+        display: inline-flex !important;
+        align-items: center;
+        gap: 6px;
+        font-weight: 700;
+      }
+      .metube-ai-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #94a3b8;
+        box-shadow: 0 0 0 3px rgba(148, 163, 184, .16);
+      }
+      .metube-ai-open[data-ai-state="ready"] .metube-ai-dot {
+        background: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, .18);
+      }
+      .metube-ai-open[data-ai-state="invalid_key"],
+      .metube-ai-open[data-ai-state="unavailable"] {
+        color: #dc2626;
+      }
+      .metube-ai-open[data-ai-state="invalid_key"] .metube-ai-dot,
+      .metube-ai-open[data-ai-state="unavailable"] .metube-ai-dot {
+        background: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, .16);
+      }
+      .metube-ai-backdrop[hidden] { display: none !important; }
+      .metube-ai-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1200;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgba(15, 23, 42, .58);
+        backdrop-filter: blur(5px);
+      }
+      .metube-ai-dialog {
+        width: min(680px, 100%);
+        max-height: min(760px, calc(100vh - 40px));
+        overflow: auto;
+        border: 1px solid var(--metube-border, rgba(148, 163, 184, .35));
+        border-radius: 16px;
+        background: var(--metube-surface, #fff);
+        color: var(--bs-body-color);
+        box-shadow: 0 30px 90px rgba(15, 23, 42, .28);
+      }
+      .metube-ai-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px 22px 14px;
+        border-bottom: 1px solid var(--metube-border, rgba(148, 163, 184, .25));
+      }
+      .metube-ai-header h2 {
+        margin: 0 0 5px;
+        font-size: 20px;
+      }
+      .metube-ai-subtitle {
+        margin: 0;
+        color: var(--bs-secondary-color);
+        font-size: 13px;
+      }
+      .metube-ai-close {
+        width: 34px;
+        height: 34px;
+        border: 1px solid var(--metube-border, rgba(148, 163, 184, .35));
+        border-radius: 9px;
+        background: transparent;
+        color: inherit;
+        font-size: 22px;
+        cursor: pointer;
+      }
+      .metube-ai-body { padding: 18px 22px 22px; }
+      .metube-ai-status-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+        padding: 11px 13px;
+        border: 1px solid var(--metube-border, rgba(148, 163, 184, .3));
+        border-radius: 10px;
+        background: var(--metube-surface-strong, rgba(148, 163, 184, .08));
+      }
+      .metube-ai-status-card strong { font-size: 14px; }
+      .metube-ai-status-card span { color: var(--bs-secondary-color); font-size: 12px; text-align: right; }
+      .metube-ai-quick {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .metube-ai-quick button,
+      .metube-ai-send {
+        border: 1px solid rgba(37, 99, 235, .35);
+        border-radius: 8px;
+        padding: 7px 11px;
+        background: rgba(37, 99, 235, .1);
+        color: #2563eb;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .metube-ai-answer {
+        min-height: 96px;
+        max-height: 280px;
+        overflow: auto;
+        margin-bottom: 12px;
+        padding: 13px 14px;
+        border: 1px solid var(--metube-border, rgba(148, 163, 184, .28));
+        border-radius: 10px;
+        background: rgba(15, 23, 42, .035);
+        white-space: pre-wrap;
+        line-height: 1.65;
+      }
+      [data-bs-theme="dark"] .metube-ai-answer { background: rgba(255, 255, 255, .035); }
+      .metube-ai-answer.is-error { border-color: rgba(239, 68, 68, .42); color: #dc2626; }
+      .metube-ai-compose {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 9px;
+      }
+      .metube-ai-compose textarea {
+        min-height: 72px;
+        resize: vertical;
+        border: 1px solid var(--metube-border, rgba(148, 163, 184, .35));
+        border-radius: 9px;
+        padding: 10px 11px;
+        background: var(--metube-surface, #fff);
+        color: inherit;
+      }
+      .metube-ai-send { align-self: stretch; min-width: 82px; }
+      .metube-ai-send:disabled,
+      .metube-ai-quick button:disabled { opacity: .55; cursor: wait; }
+      .metube-ai-footnote {
+        margin: 10px 0 0;
+        color: var(--bs-secondary-color);
+        font-size: 12px;
+      }
       @media (max-width: 900px) {
         .metube-youtube-login-entry {
           top: 48px;
@@ -518,6 +694,522 @@
       }
       .metube-material-toast.is-error {
         background: rgba(220, 53, 69, .96);
+      }
+      :root {
+        --metube-bg: #f2f5f7;
+        --metube-surface: #ffffff;
+        --metube-surface-strong: #eef2f5;
+        --metube-panel: rgba(255, 255, 255, .88);
+        --metube-border: rgba(37, 49, 60, .14);
+        --metube-text-soft: #62707d;
+        --metube-accent: #0f766e;
+        --metube-accent-strong: #0b5f59;
+        --metube-blue: #2563eb;
+        --metube-amber: #b7791f;
+        --metube-danger: #dc3545;
+        --metube-shadow: 0 18px 45px rgba(31, 41, 55, .11);
+        --metube-soft-shadow: 0 8px 24px rgba(31, 41, 55, .075);
+      }
+      [data-bs-theme="dark"] {
+        --metube-bg: #10151a;
+        --metube-surface: #151c22;
+        --metube-surface-strong: #1f2931;
+        --metube-panel: rgba(21, 28, 34, .9);
+        --metube-border: rgba(150, 165, 180, .18);
+        --metube-text-soft: #9aa8b5;
+        --metube-accent: #21a69a;
+        --metube-accent-strong: #34c2b5;
+        --metube-blue: #5b8def;
+        --metube-amber: #f2b84b;
+        --metube-danger: #ff6b7a;
+        --metube-shadow: 0 20px 48px rgba(0, 0, 0, .36);
+        --metube-soft-shadow: 0 12px 30px rgba(0, 0, 0, .24);
+      }
+      html,
+      body {
+        letter-spacing: 0;
+      }
+      body {
+        background:
+          linear-gradient(180deg, rgba(15, 118, 110, .09), rgba(37, 99, 235, .055) 260px, transparent 520px),
+          linear-gradient(90deg, rgba(15, 23, 42, .035) 1px, transparent 1px),
+          linear-gradient(180deg, rgba(15, 23, 42, .03) 1px, transparent 1px),
+          var(--metube-bg) !important;
+        background-size: auto, 36px 36px, 36px 36px, auto;
+      }
+      [data-bs-theme="dark"] body {
+        background:
+          linear-gradient(180deg, rgba(33, 166, 154, .13), rgba(91, 141, 239, .08) 260px, transparent 520px),
+          linear-gradient(90deg, rgba(255, 255, 255, .035) 1px, transparent 1px),
+          linear-gradient(180deg, rgba(255, 255, 255, .03) 1px, transparent 1px),
+          var(--metube-bg) !important;
+      }
+      .navbar {
+        position: sticky;
+        top: 0;
+        z-index: 1045;
+        min-height: 54px;
+        border-bottom: 1px solid var(--metube-border);
+        background: color-mix(in srgb, var(--metube-surface) 88%, transparent) !important;
+        box-shadow: 0 1px 0 rgba(15, 23, 42, .04), 0 10px 32px rgba(15, 23, 42, .055);
+        backdrop-filter: blur(14px);
+      }
+      [data-bs-theme="dark"] .navbar {
+        background: #141b21 !important;
+      }
+      .navbar-brand {
+        color: var(--bs-emphasis-color) !important;
+        font-weight: 650;
+      }
+      .navbar-brand img {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+      }
+      .download-metrics {
+        gap: 10px !important;
+        margin-left: 18px !important;
+      }
+      .download-metrics .metric {
+        min-height: 28px;
+        padding: 3px 9px;
+        border: 1px solid var(--metube-border);
+        border-radius: 6px;
+        background: var(--metube-surface-strong);
+        color: var(--metube-text-soft) !important;
+        font-size: .82rem !important;
+      }
+      main.container,
+      main.container-xl {
+        max-width: 1320px;
+      }
+      .add-url-box {
+        max-width: 980px;
+        margin: 2.25rem auto 2.5rem !important;
+        padding: 18px;
+        border: 1px solid var(--metube-border);
+        border-top: 4px solid var(--metube-accent);
+        border-radius: 12px;
+        background: var(--metube-panel);
+        box-shadow: var(--metube-shadow);
+        backdrop-filter: blur(12px);
+      }
+      .add-url-box > .input-group:first-child {
+        box-shadow: 0 10px 24px rgba(37, 99, 235, .1);
+      }
+      .add-url-box .form-control,
+      .add-url-box .form-select,
+      .add-url-box .input-group-text {
+        min-height: 40px;
+      }
+      .input-group,
+      .btn-group,
+      .form-control,
+      .form-select,
+      .input-group-text,
+      .btn {
+        border-radius: 7px;
+      }
+      .input-group > .form-control,
+      .input-group > .form-select,
+      .input-group > .input-group-text,
+      .input-group > .btn {
+        border-color: var(--metube-border);
+      }
+      .input-group-text {
+        background: var(--metube-surface-strong);
+        color: var(--metube-text-soft);
+        font-weight: 600;
+      }
+      .btn-primary {
+        background: var(--metube-blue);
+        border-color: var(--metube-blue);
+        box-shadow: 0 8px 18px rgba(37, 99, 235, .22);
+      }
+      .btn-primary:hover {
+        filter: brightness(.96);
+      }
+      .btn-outline-secondary,
+      .btn-secondary {
+        border-color: var(--metube-border);
+      }
+      .btn-link {
+        color: var(--metube-blue);
+      }
+      .metube-section-header {
+        display: flex;
+        align-items: center;
+        min-height: 58px;
+        margin: 1.85rem 0 0 !important;
+        padding: 0 16px !important;
+        border-top: 1px solid var(--metube-border);
+        border-left: 4px solid var(--metube-accent);
+        border-bottom: 1px solid var(--metube-border);
+        border-radius: 10px 10px 0 0;
+        background:
+          linear-gradient(90deg, rgba(15, 118, 110, .1), transparent 38%),
+          var(--metube-surface-strong) !important;
+        color: var(--bs-emphasis-color);
+        font-size: 1.42rem !important;
+        font-weight: 680 !important;
+      }
+      .metube-section-header::before {
+        border-left-color: var(--metube-surface-strong) !important;
+        box-shadow: 9999px 0 0 var(--metube-surface-strong) !important;
+      }
+      #metube-subscriptions-target {
+        border-left-color: var(--metube-amber);
+        background:
+          linear-gradient(90deg, rgba(183, 121, 31, .16), transparent 42%),
+          var(--metube-surface-strong) !important;
+      }
+      .overflow-auto {
+        margin-bottom: 1.25rem;
+        border-right: 1px solid var(--metube-border);
+        border-bottom: 1px solid var(--metube-border);
+        border-left: 1px solid var(--metube-border);
+        border-radius: 0 0 10px 10px;
+        background: var(--metube-surface);
+        box-shadow: var(--metube-soft-shadow);
+      }
+      .table {
+        --bs-table-bg: transparent;
+        --bs-table-color: var(--bs-body-color);
+        margin-bottom: 0;
+      }
+      .table thead th {
+        background: var(--metube-surface);
+        border-bottom: 2px solid var(--metube-border) !important;
+        color: var(--bs-emphasis-color);
+        font-size: .9rem;
+        font-weight: 650;
+        padding-top: 12px;
+        padding-bottom: 12px;
+      }
+      .table tbody td {
+        border-color: var(--metube-border);
+        padding-top: 11px;
+        padding-bottom: 11px;
+        vertical-align: middle;
+      }
+      .table tbody tr:nth-child(even) {
+        background: rgba(15, 23, 42, .018);
+      }
+      [data-bs-theme="dark"] .table tbody tr:nth-child(even) {
+        background: rgba(255, 255, 255, .018);
+      }
+      .table tbody tr:hover {
+        background: rgba(15, 118, 110, .055);
+      }
+      [data-bs-theme="dark"] .table tbody tr:hover {
+        background: rgba(33, 166, 154, .08);
+      }
+      .download-progressbar {
+        width: 12rem;
+      }
+      .metube-row-thumb {
+        width: 44px;
+        height: 25px;
+        position: relative;
+        flex: 0 0 44px;
+        margin: 0 10px 0 2px;
+        border-radius: 5px;
+        background: linear-gradient(135deg, rgba(226, 232, 240, .94), rgba(148, 163, 184, .62));
+        border-color: rgba(255, 255, 255, .2);
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08);
+        color: rgba(71, 85, 105, .82);
+        cursor: default;
+      }
+      [data-bs-theme="dark"] .metube-row-thumb {
+        background: linear-gradient(135deg, rgba(51, 65, 85, .96), rgba(15, 23, 42, .96));
+        color: rgba(226, 232, 240, .82);
+      }
+      .metube-row-thumb::before {
+        content: "";
+        position: absolute;
+        width: 0;
+        height: 0;
+        border-top: 5px solid transparent;
+        border-bottom: 5px solid transparent;
+        border-left: 8px solid currentColor;
+      }
+      .metube-row-thumb.has-image::before {
+        display: none;
+      }
+      .metube-row-thumb img {
+        opacity: 0;
+        transition: opacity .12s ease, transform .16s ease;
+      }
+      .metube-row-thumb.has-image img {
+        opacity: 1;
+      }
+      .metube-row-thumb:hover img {
+        transform: scale(1.06);
+      }
+      td.metube-video-thumb-cell > a,
+      td.metube-video-thumb-cell > button {
+        max-width: calc(100% - 66px);
+      }
+      .metube-thumb-preview {
+        position: fixed;
+        z-index: 99998;
+        width: 260px;
+        aspect-ratio: 16 / 9;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(6px) scale(.98);
+        transition: opacity .12s ease, transform .12s ease;
+        border: 1px solid rgba(255, 255, 255, .28);
+        border-radius: 8px;
+        overflow: hidden;
+        background: #111820;
+        box-shadow: 0 18px 44px rgba(0, 0, 0, .34);
+      }
+      .metube-thumb-preview.is-visible {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      .metube-thumb-preview img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+      }
+      .metube-subscription-cell {
+        position: sticky;
+        left: 2.6rem;
+        z-index: 3;
+        background: var(--metube-bg);
+        box-shadow: 10px 0 16px rgba(15, 23, 42, .035);
+      }
+      .metube-subscriptions-table thead th:nth-child(2) {
+        position: sticky;
+        left: 2.6rem;
+        z-index: 4;
+      }
+      .metube-subscription-avatar {
+        width: 28px;
+        height: 28px;
+        flex-basis: 28px;
+        margin-right: 10px;
+        border: 2px solid var(--metube-surface);
+        box-shadow: 0 0 0 1px var(--metube-border), 0 4px 10px rgba(15, 23, 42, .12);
+      }
+      .metube-material-bundle {
+        max-width: 980px;
+        margin: 1rem auto 0;
+        padding: 12px 0 0;
+        border: 0;
+        border-top: 1px solid var(--metube-border);
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+      .metube-material-bundle strong {
+        color: var(--bs-emphasis-color);
+      }
+      .metube-material-bundle label {
+        padding: 5px 8px;
+        border: 1px solid var(--metube-border);
+        border-radius: 6px;
+        background: color-mix(in srgb, var(--metube-surface-strong) 84%, var(--metube-accent) 16%);
+        font-weight: 600;
+      }
+      .metube-material-hint {
+        flex-basis: 100%;
+        margin-left: 0;
+      }
+      .metube-youtube-login-entry {
+        top: 10px;
+        right: 12px;
+        min-height: 32px;
+        padding: 4px;
+        border: 1px solid var(--metube-border);
+        border-radius: 8px;
+        background: var(--metube-surface);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+      }
+      [data-bs-theme="dark"] .metube-youtube-login-entry {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .22);
+      }
+      .metube-youtube-login-entry strong {
+        padding: 0 5px 0 6px;
+      }
+      .metube-youtube-login-entry button,
+      .metube-youtube-login-entry a {
+        border-color: var(--metube-border);
+        background: var(--metube-surface-strong);
+        color: var(--bs-emphasis-color);
+      }
+      .metube-youtube-login-entry button:hover,
+      .metube-youtube-login-entry a:hover {
+        background: rgba(37, 99, 235, .12);
+        color: var(--metube-blue);
+      }
+      .metube-youtube-login-entry .metube-youtube-login-status {
+        padding-right: 6px;
+        color: #b7791f;
+      }
+      .metube-youtube-login-entry .metube-youtube-login-status.is-active {
+        color: var(--metube-accent);
+      }
+      .metube-left-rail {
+        position: fixed;
+        left: 18px;
+        top: 86px;
+        z-index: 1040;
+        width: 78px;
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        border: 1px solid var(--metube-border);
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--metube-surface) 94%, transparent);
+        box-shadow: var(--metube-shadow);
+        backdrop-filter: blur(10px);
+      }
+      .metube-left-rail button {
+        min-height: 50px;
+        width: 100%;
+        border: 1px solid transparent;
+        border-radius: 9px;
+        background: transparent;
+        color: var(--metube-text-soft);
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .metube-left-rail button::before {
+        display: block;
+        margin-bottom: 2px;
+        color: color-mix(in srgb, var(--metube-text-soft) 72%, transparent);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0;
+      }
+      .metube-left-rail button:nth-child(1)::before { content: "01"; }
+      .metube-left-rail button:nth-child(2)::before { content: "02"; }
+      .metube-left-rail button:nth-child(3)::before { content: "03"; }
+      .metube-left-rail button:nth-child(4)::before { content: "04"; }
+      .metube-left-rail button:hover,
+      .metube-left-rail button.is-active {
+        border-color: rgba(15, 118, 110, .25);
+        background: rgba(15, 118, 110, .12);
+        color: var(--metube-accent-strong);
+      }
+      @media (min-width: 1180px) {
+        body.metube-has-left-rail main.container,
+        body.metube-has-left-rail main.container-xl {
+          max-width: calc(100vw - 170px);
+          margin-left: 112px;
+          margin-right: 36px;
+        }
+      }
+      @media (max-width: 1179px) {
+        .metube-left-rail {
+          display: none;
+        }
+      }
+      @media (max-width: 900px) {
+        body.metube-has-youtube-login main.container,
+        body.metube-has-youtube-login main.container-xl {
+          padding-top: 76px;
+        }
+        .metube-youtube-login-entry {
+          position: fixed;
+          top: 54px;
+          left: 8px;
+          right: auto;
+          width: calc(100% - 16px);
+          box-sizing: border-box;
+          margin: 0;
+          max-width: none;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto auto auto;
+          align-items: center;
+          justify-content: stretch;
+          gap: 6px;
+        }
+        .metube-youtube-login-entry strong {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .metube-youtube-login-entry a,
+        .metube-youtube-login-entry button {
+          padding: 3px 8px;
+          white-space: nowrap;
+        }
+        .metube-youtube-login-entry .metube-youtube-login-note {
+          display: none;
+        }
+        .metube-youtube-login-entry .metube-youtube-login-status {
+          grid-column: 1 / -1;
+          justify-self: end;
+        }
+      }
+      @media (max-width: 700px) {
+        .metube-ai-backdrop { padding: 8px; }
+        .metube-ai-dialog { max-height: calc(100vh - 16px); border-radius: 12px; }
+        .metube-ai-header, .metube-ai-body { padding-left: 15px; padding-right: 15px; }
+        .metube-ai-compose { grid-template-columns: 1fr; }
+        .metube-ai-send { min-height: 42px; }
+        .overflow-auto table {
+          min-width: 760px;
+        }
+        .overflow-auto .metube-subscriptions-table {
+          min-width: 920px;
+        }
+        footer,
+        .footer {
+          display: flex !important;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: center;
+          gap: 8px 14px;
+          padding: 14px 16px;
+          text-align: center;
+        }
+        .footer .container {
+          width: 100%;
+          max-width: 100%;
+          padding-left: 0;
+          padding-right: 0;
+        }
+        .footer .footer-content {
+          display: flex !important;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: center;
+          gap: 8px 12px;
+          width: 100%;
+        }
+        .footer .version-item,
+        .footer .github-link {
+          display: inline-flex !important;
+          flex-direction: row !important;
+          align-items: center;
+          gap: 6px;
+        }
+        .footer .version-separator {
+          display: none !important;
+        }
+        footer *,
+        .footer * {
+          width: auto !important;
+          max-width: 100%;
+          writing-mode: horizontal-tb !important;
+          word-break: keep-all;
+          white-space: normal;
+        }
+        footer a,
+        footer code,
+        .footer a,
+        .footer code {
+          white-space: nowrap;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -555,6 +1247,72 @@
     if (!item) return "";
     if (/^[A-Za-z0-9_-]{11}$/.test(item.id || "")) return item.id;
     return getYoutubeIdFromUrl(item.url);
+  }
+
+  function youtubeThumbnailUrls(id) {
+    if (!id) return [];
+    return [
+      `https://i.ytimg.com/vi/${id}/hq720.jpg`,
+      `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
+      `https://i.ytimg.com/vi/${id}/sddefault.jpg`,
+      `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+      `https://i.ytimg.com/vi/${id}/mqdefault.jpg`,
+    ];
+  }
+
+  function installImageFallbacks(img, urls, onEmpty) {
+    let index = 0;
+    img.onload = () => {
+      img.parentElement?.classList.add("has-image");
+    };
+    img.onerror = () => {
+      index += 1;
+      if (index < urls.length) {
+        img.src = urls[index];
+        return;
+      }
+      img.remove();
+      onEmpty?.();
+    };
+    img.src = urls[index] || "";
+  }
+
+  function ensureThumbnailPreview() {
+    let preview = document.getElementById("metube-thumb-preview");
+    if (preview) return preview;
+    preview = document.createElement("div");
+    preview.id = "metube-thumb-preview";
+    preview.className = "metube-thumb-preview";
+    preview.innerHTML = '<img alt="">';
+    document.body.appendChild(preview);
+    return preview;
+  }
+
+  function moveThumbnailPreview(event) {
+    const preview = ensureThumbnailPreview();
+    const width = 260;
+    const height = 146;
+    const pad = 14;
+    let left = event.clientX + 16;
+    let top = event.clientY + 16;
+    if (left + width + pad > window.innerWidth) left = event.clientX - width - 16;
+    if (top + height + pad > window.innerHeight) top = window.innerHeight - height - pad;
+    preview.style.left = `${Math.max(pad, left)}px`;
+    preview.style.top = `${Math.max(pad, top)}px`;
+  }
+
+  function showThumbnailPreview(src, event) {
+    if (!src) return;
+    const preview = ensureThumbnailPreview();
+    const img = preview.querySelector("img");
+    if (img && img.src !== src) img.src = src;
+    moveThumbnailPreview(event);
+    preview.classList.add("is-visible");
+  }
+
+  function hideThumbnailPreview() {
+    const preview = document.getElementById("metube-thumb-preview");
+    if (preview) preview.classList.remove("is-visible");
   }
 
   function normalizeUrlKey(value) {
@@ -601,6 +1359,7 @@
         for (const item of list) indexDownloadItem(item);
       }
       enhanceThumbnails();
+      enhanceAssetBadges();
     } catch (_) {
       // 网络临时失败时不打扰页面，下一轮轮询会继续补。
     } finally {
@@ -647,16 +1406,19 @@
       return holder;
     }
 
+    const urls = youtubeThumbnailUrls(id);
     const img = document.createElement("img");
     img.loading = "lazy";
     img.decoding = "async";
     img.referrerPolicy = "no-referrer";
     img.alt = "";
-    img.src = `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;
-    img.onerror = () => {
-      img.remove();
-      holder.classList.add("is-empty");
-    };
+    installImageFallbacks(img, urls, () => holder.classList.add("is-empty"));
+    holder.addEventListener("mouseenter", (event) => {
+      if (!holder.classList.contains("has-image")) return;
+      showThumbnailPreview(img.currentSrc || img.src || urls[0], event);
+    });
+    holder.addEventListener("mousemove", (event) => moveThumbnailPreview(event));
+    holder.addEventListener("mouseleave", hideThumbnailPreview);
     holder.appendChild(img);
     return holder;
   }
@@ -673,6 +1435,51 @@
       const anchor = cell.querySelector("a[href]");
       cell.classList.add("metube-video-thumb-cell");
       cell.insertBefore(createThumbnail(item, anchor && anchor.href), cell.firstChild);
+    }
+  }
+
+  const assetTypeLabels = {
+    video: "视频",
+    audio: "音频",
+    captions: "字幕",
+    thumbnail: "封面",
+  };
+
+  function normalizeAssetType(value) {
+    const text = cleanText(String(value || "")).toLowerCase();
+    if (["video", "视频"].includes(text)) return "video";
+    if (["audio", "音频"].includes(text)) return "audio";
+    if (["captions", "caption", "subtitles", "subtitle", "字幕"].includes(text)) return "captions";
+    if (["thumbnail", "封面", "封面图"].includes(text)) return "thumbnail";
+    return "";
+  }
+
+  function findAssetTypeForRow(row, item) {
+    const cells = Array.from(row.querySelectorAll("td"));
+    for (const cell of cells.slice(2)) {
+      const type = normalizeAssetType(cell.textContent || "");
+      if (type) return type;
+    }
+    return normalizeAssetType(item?.download_type);
+  }
+
+  function enhanceAssetBadges() {
+    for (const row of document.querySelectorAll("table tbody tr")) {
+      if (row.querySelector(".metube-asset-badge")) continue;
+      const cells = row.querySelectorAll("td");
+      if (cells.length < 2) continue;
+      const titleCell = cells[1];
+      const item = findItemForCell(titleCell);
+      const assetType = findAssetTypeForRow(row, item);
+      if (!assetType || !assetTypeLabels[assetType]) continue;
+      const badge = document.createElement("span");
+      badge.className = "metube-asset-badge";
+      badge.dataset.assetType = assetType;
+      badge.textContent = assetTypeLabels[assetType];
+      badge.title = `任务类型：${assetTypeLabels[assetType]}`;
+      const thumbnail = titleCell.querySelector(".metube-row-thumb");
+      if (thumbnail) thumbnail.insertAdjacentElement("afterend", badge);
+      else titleCell.insertBefore(badge, titleCell.firstChild);
     }
   }
 
@@ -773,6 +1580,7 @@
     for (const row of document.querySelectorAll("table tbody tr")) {
       const table = row.closest("table");
       if (!tableLooksLikeSubscriptions(table)) continue;
+      table.classList.add("metube-subscriptions-table");
       if (row.querySelector(".metube-subscription-avatar")) continue;
       const item = findSubscriptionItemForRow(row);
       if (!item) continue;
@@ -781,6 +1589,110 @@
       cell.classList.add("metube-subscription-cell");
       cell.insertBefore(createSubscriptionAvatar(item), cell.firstChild);
     }
+  }
+
+  function sectionTargetByText(pattern) {
+    const headers = Array.from(document.querySelectorAll(".metube-section-header"));
+    const header = headers.find((item) => pattern.test(cleanText(item.textContent || "")));
+    return header || null;
+  }
+
+  function isSectionHeaderElement(node) {
+    if (!(node instanceof HTMLElement)) return false;
+    const tagName = node.tagName || "";
+    if (!/^H[1-6]$/.test(tagName) && !node.classList.contains("metube-section-header")) return false;
+    return /Downloading|Completed|Subscriptions|下载中|已完成|订阅/.test(cleanText(node.textContent || ""));
+  }
+
+  function collectSectionNodes(header) {
+    const nodes = [];
+    for (let node = header; node; node = node.nextElementSibling) {
+      if (node !== header && isSectionHeaderElement(node)) break;
+      nodes.push(node);
+    }
+    return nodes;
+  }
+
+  function moveSectionBefore(header, beforeHeader) {
+    if (!header || !beforeHeader || header === beforeHeader) return;
+    if (header.parentElement !== beforeHeader.parentElement) return;
+    const order = header.compareDocumentPosition(beforeHeader);
+    if (order & Node.DOCUMENT_POSITION_FOLLOWING) return;
+    const nodes = collectSectionNodes(header);
+    if (!nodes.length || nodes.includes(beforeHeader)) return;
+    const fragment = document.createDocumentFragment();
+    for (const node of nodes) fragment.appendChild(node);
+    beforeHeader.parentElement.insertBefore(fragment, beforeHeader);
+  }
+
+  function prioritizeSubscriptionsSection() {
+    const subscriptions = sectionTargetByText(/Subscriptions|订阅/);
+    const downloading = sectionTargetByText(/Downloading|下载中/);
+    const completed = sectionTargetByText(/Completed|已完成/);
+    moveSectionBefore(subscriptions, downloading || completed);
+  }
+
+  function scrollToSection(target) {
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function updateLeftRailActive() {
+    const rail = document.getElementById("metube-left-rail");
+    if (!rail) return;
+    const targets = Array.from(rail.querySelectorAll("button[data-target]"));
+    let active = targets[0] || null;
+    for (const button of targets) {
+      const target = document.querySelector(button.getAttribute("data-target") || "");
+      if (!target) continue;
+      if (target.getBoundingClientRect().top < 140) active = button;
+    }
+    for (const button of targets) button.classList.toggle("is-active", button === active);
+  }
+
+  function installLeftRail() {
+    installThumbnailStyles();
+    document.body.classList.add("metube-has-left-rail");
+    prioritizeSubscriptionsSection();
+    let addTarget = document.getElementById("metube-add-target");
+    if (!addTarget) {
+      addTarget = findUrlInput()?.closest("form") || document.querySelector("main");
+      addTarget?.setAttribute("id", "metube-add-target");
+    }
+    const downloading = sectionTargetByText(/Downloading|下载中/);
+    const completed = sectionTargetByText(/Completed|已完成/);
+    const subscriptions = sectionTargetByText(/Subscriptions|订阅/);
+    downloading?.setAttribute("id", "metube-downloading-target");
+    completed?.setAttribute("id", "metube-completed-target");
+    subscriptions?.setAttribute("id", "metube-subscriptions-target");
+
+    let rail = document.getElementById("metube-left-rail");
+    if (!rail) {
+      rail = document.createElement("nav");
+      rail.id = "metube-left-rail";
+      rail.className = "metube-left-rail";
+      rail.setAttribute("aria-label", "页面快捷导航");
+      rail.innerHTML = `
+        <button type="button" data-target="#metube-add-target" title="回到添加区">添加</button>
+        <button type="button" data-target="#metube-subscriptions-target" title="查看订阅">订阅</button>
+        <button type="button" data-target="#metube-downloading-target" title="查看下载中">下载</button>
+        <button type="button" data-target="#metube-completed-target" title="查看已完成">完成</button>
+      `;
+      rail.addEventListener("click", (event) => {
+        const button = event.target.closest?.("button[data-target]");
+        if (!button) return;
+        scrollToSection(document.querySelector(button.getAttribute("data-target") || ""));
+      });
+      document.body.appendChild(rail);
+      window.addEventListener("scroll", updateLeftRailActive, { passive: true });
+      window.addEventListener("resize", updateLeftRailActive);
+    }
+
+    for (const button of rail.querySelectorAll("button[data-target]")) {
+      const target = document.querySelector(button.getAttribute("data-target") || "");
+      button.disabled = !target;
+    }
+    updateLeftRailActive();
   }
 
   function cleanText(value) {
@@ -1021,6 +1933,7 @@
     if (document.getElementById("metube-youtube-login-entry")) return;
     const typeSelect = findTypeSelect();
     if (!typeSelect) return;
+    document.body.classList.add("metube-has-youtube-login");
 
     const entry = document.createElement("div");
     entry.id = "metube-youtube-login-entry";
@@ -1058,6 +1971,172 @@
       });
     });
     refreshYoutubeLoginStatus(true);
+  }
+
+  const aiAssistantState = {
+    loading: false,
+    status: null,
+  };
+
+  function updateAiStatusUi(data) {
+    aiAssistantState.status = data || null;
+    const state = data?.state || "unknown";
+    const button = document.querySelector("[data-ai-open]");
+    if (button) {
+      button.dataset.aiState = state;
+      const label = button.querySelector(".metube-ai-label");
+      if (label) label.textContent = state === "ready" ? "AI 助手" : state === "invalid_key" ? "AI 密钥无效" : "AI 助手";
+    }
+    const card = document.querySelector("#metube-ai-dialog .metube-ai-status-card");
+    if (!card) return;
+    const title = card.querySelector("strong");
+    const detail = card.querySelector("span");
+    if (title) title.textContent = data?.message || "正在检查 AI 状态";
+    if (detail) {
+      const parts = [data?.provider, data?.model].filter(Boolean);
+      detail.textContent = parts.join(" · ") || "未配置供应商";
+    }
+  }
+
+  async function refreshAiStatus(force = false) {
+    if (aiAssistantState.loading) return aiAssistantState.status;
+    if (!force && aiAssistantState.status) return aiAssistantState.status;
+    aiAssistantState.loading = true;
+    try {
+      const response = await fetch("ai/status", { cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.msg || response.statusText || "AI 状态检查失败");
+      updateAiStatusUi(data);
+      return data;
+    } catch (error) {
+      const data = { state: "unavailable", message: "AI 后端尚未启用", detail: String(error?.message || error) };
+      updateAiStatusUi(data);
+      return data;
+    } finally {
+      aiAssistantState.loading = false;
+    }
+  }
+
+  async function buildAiPageContext() {
+    try {
+      const response = await fetch("history", { cache: "no-store" });
+      if (!response.ok) return "";
+      const data = await response.json();
+      const failures = (Array.isArray(data.done) ? data.done : []).filter((item) => item?.status === "error");
+      const rows = failures.slice(0, 20).map((item) => {
+        const type = assetTypeLabels[normalizeAssetType(item.download_type)] || "未知任务";
+        const message = cleanText(String(item.msg || "未知错误")).slice(0, 300);
+        return `[${type}] ${cleanText(String(item.title || "未命名"))}：${message}`;
+      });
+      return `当前失败任务 ${failures.length} 条。\n${rows.join("\n")}`.trim();
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function setAiAnswer(text, isError = false) {
+    const answer = document.querySelector("#metube-ai-dialog .metube-ai-answer");
+    if (!answer) return;
+    answer.textContent = text;
+    answer.classList.toggle("is-error", isError);
+  }
+
+  async function sendAiQuestion(message) {
+    const question = cleanText(String(message || ""));
+    if (!question) {
+      setAiAnswer("请输入问题。", true);
+      return;
+    }
+    const status = await refreshAiStatus(true);
+    if (status?.state !== "ready") {
+      setAiAnswer(status?.message || "AI 当前不可用。", true);
+      return;
+    }
+    const dialog = document.getElementById("metube-ai-dialog");
+    const controls = Array.from(dialog?.querySelectorAll("button, textarea") || []);
+    controls.forEach((control) => { control.disabled = true; });
+    setAiAnswer("AI 正在分析，请稍等...");
+    try {
+      const context = await buildAiPageContext();
+      const response = await fetch("ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: question, context }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.status === "error") throw new Error(data.msg || response.statusText || "AI 请求失败");
+      setAiAnswer(data.answer || "AI 没有返回内容。", !data.answer);
+    } catch (error) {
+      setAiAnswer(`AI 请求失败：${error.message || error}`, true);
+      refreshAiStatus(true);
+    } finally {
+      controls.forEach((control) => { control.disabled = false; });
+    }
+  }
+
+  function installAiAssistant() {
+    const loginEntry = document.getElementById("metube-youtube-login-entry");
+    if (!loginEntry || document.querySelector("[data-ai-open]")) return;
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "metube-ai-open";
+    button.dataset.aiOpen = "";
+    button.dataset.aiState = "unknown";
+    button.innerHTML = '<span class="metube-ai-dot" aria-hidden="true"></span><span class="metube-ai-label">AI 助手</span>';
+    const status = loginEntry.querySelector(".metube-youtube-login-status");
+    loginEntry.insertBefore(button, status || null);
+
+    const backdrop = document.createElement("div");
+    backdrop.className = "metube-ai-backdrop";
+    backdrop.hidden = true;
+    backdrop.innerHTML = `
+      <section id="metube-ai-dialog" class="metube-ai-dialog" role="dialog" aria-modal="true" aria-labelledby="metube-ai-title">
+        <header class="metube-ai-header">
+          <div>
+            <h2 id="metube-ai-title">AI 下载助手</h2>
+            <p class="metube-ai-subtitle">解释失败原因、分析当前任务、给出下一步处理建议。</p>
+          </div>
+          <button class="metube-ai-close" type="button" aria-label="关闭">×</button>
+        </header>
+        <div class="metube-ai-body">
+          <div class="metube-ai-status-card"><strong>正在检查 AI 状态...</strong><span></span></div>
+          <div class="metube-ai-quick">
+            <button type="button" data-ai-question="分析当前失败任务，告诉我哪些是视频失败、哪些只是素材任务，并说明系统会怎样自动处理。">分析当前失败</button>
+            <button type="button" data-ai-question="用大白话说明当前下载系统的自动格式和线路回退顺序。">说明自动修复</button>
+          </div>
+          <div class="metube-ai-answer" aria-live="polite">可以直接提问，也可以点上面的快捷分析。</div>
+          <div class="metube-ai-compose">
+            <textarea maxlength="2000" placeholder="例如：为什么这些视频会出现 403？系统会自动换什么线路？"></textarea>
+            <button class="metube-ai-send" type="button">发送</button>
+          </div>
+          <p class="metube-ai-footnote">AI 只负责解释和辅助判断；真正的格式、线路切换由下载内核按固定规则执行。</p>
+        </div>
+      </section>
+    `;
+    document.body.appendChild(backdrop);
+
+    const close = () => { backdrop.hidden = true; };
+    button.addEventListener("click", () => {
+      backdrop.hidden = false;
+      refreshAiStatus(true);
+      setTimeout(() => backdrop.querySelector("textarea")?.focus(), 0);
+    });
+    backdrop.querySelector(".metube-ai-close")?.addEventListener("click", close);
+    backdrop.addEventListener("click", (event) => { if (event.target === backdrop) close(); });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !backdrop.hidden) close();
+    });
+    backdrop.querySelectorAll("[data-ai-question]").forEach((quick) => {
+      quick.addEventListener("click", () => sendAiQuestion(quick.dataset.aiQuestion));
+    });
+    const textarea = backdrop.querySelector("textarea");
+    const send = () => sendAiQuestion(textarea?.value || "");
+    backdrop.querySelector(".metube-ai-send")?.addEventListener("click", send);
+    textarea?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) send();
+    });
+    refreshAiStatus();
   }
 
   function selectedMaterialAssets() {
@@ -1210,10 +2289,13 @@
       translateTree(document.body);
       rewriteProjectLinks(document);
       enhanceThumbnails();
+      enhanceAssetBadges();
       enhanceSubscriptionAvatars();
       applyDefaultAutoFormat();
       installMaterialBundleControls();
       installYoutubeLoginEntry();
+      installAiAssistant();
+      installLeftRail();
       refreshYoutubeLoginStatus();
     });
   }
